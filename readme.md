@@ -1,4 +1,4 @@
-# i18n-replace
+# i18n-patch
 
 > Replacing codes for i18n with patterns.
 
@@ -7,7 +7,7 @@
 ## Install
 
 ```console
-$ npm install -g i18n-replace
+$ npm install -g i18n-patch
 ```
 
 ## Usage
