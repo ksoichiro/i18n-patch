@@ -1,0 +1,17 @@
+{
+  "translations": [
+    {
+      "src": "**/*.js",
+      "patterns": [
+        {
+          "pattern": "preview.text(\"Nothing to preview.\");",
+          "replace": "preview.text(\"${nothingToPreview}\");"
+        },
+        {
+          "pattern": "preview.text(\"Loading...\");",
+          "replace": "preview.text(\"${loading}\");"
+        }
+      ]
+    }
+  ]
+}

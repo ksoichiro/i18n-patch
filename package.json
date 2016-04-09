@@ -1,0 +1,85 @@
+{
+  "name": "i18n-patch",
+  "version": "0.0.1",
+  "description": "Replacing codes for i18n with patterns.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ksoichiro/i18n-patch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ksoichiro/i18n-patch/issues"
+  },
+  "main": "lib/index.js",
+  "bin": "lib/cli.js",
+  "author": {
+    "name": "Soichiro Kashima",
+    "email": "soichiro.kashima@gmail.com",
+    "url": "https://github.com/ksoichiro"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "dependencies": {
+    "fs-extra": "^0.26.7",
+    "glob": "^7.0.3",
+    "meow": "^3.7.0",
+    "temp": "^0.8.3"
+  },
+  "devDependencies": {
+    "ava": "^0.13.0",
+    "babel-cli": "^6.6.5",
+    "babel-preset-es2015": "^6.6.0",
+    "eslint": "^2.5.3"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  },
+  "files": [
+    "src",
+    "lib"
+  ],
+  "scripts": {
+    "prepublish": "npm run build",
+    "start": "node ./lib/cli",
+    "build": "babel src -d lib -s inline",
+    "watch": "babel src -d lib -s inline -w",
+    "test": "eslint src"
+  },
+  "eslintConfig": {
+    "env": {
+      "es6": true,
+      "node": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "rules": {
+      "indent": [
+        "error",
+        2
+      ],
+      "linebreak-style": [
+        "error",
+        "unix"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ],
+      "semi": [
+        "error",
+        "always"
+      ],
+      "no-console": [
+        "off"
+      ]
+    }
+  }
+}
