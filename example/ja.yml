@@ -1,2 +1,8 @@
 nothingToPreview: プレビューする内容がありません
 loading: 読み込み中...
+codeBar1: |
+          appended.code(1);
+          console.log('ok');
+codeBar2: |
+          appended.code(2);
+          console.log('ok');

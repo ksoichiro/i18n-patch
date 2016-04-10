@@ -37,7 +37,7 @@ console.log('other codes should be untouched.');
     // Codes are inserted at the begining of the file
     t.is(
       fs.readFileSync(path.join(tempDir, 'js/bar1.js'), 'utf8'),
-      `appended.code();
+      `appended.code(1);
 console.log('ok');
 console.log('bar');
 `);
@@ -45,7 +45,7 @@ console.log('bar');
     t.is(
       fs.readFileSync(path.join(tempDir, 'js/bar2.js'), 'utf8'),
       `console.log('bar');
-appended.code();
+appended.code(2);
 console.log('ok');
 `);
     // Files that are not included are also copied

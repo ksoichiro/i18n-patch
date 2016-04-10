@@ -9,13 +9,9 @@ translations:
   patterns:
   - insert:
       at: begin
-      value: |
-             appended.code();
-             console.log('ok');
+      value: codeBar1
 - src: '**/bar2.js'
   patterns:
   - insert:
       at: end
-      value: |
-             appended.code();
-             console.log('ok');
+      value: codeBar2

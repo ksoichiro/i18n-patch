@@ -86,17 +86,20 @@ export default class I18nPatch {
     this.config.translations.forEach((t) => {
       t.patterns.forEach((p) => {
         let resolved = false;
-        if (!p.replace) {
-          return;
-        }
-        p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
-          if (this.localeConfig.hasOwnProperty(matched)) {
-            resolved = true;
+        if (p.replace) {
+          p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
+            if (this.localeConfig.hasOwnProperty(matched)) {
+              resolved = true;
+            }
+            return this.localeConfig[matched];
+          });
+          if (!resolved) {
+            p.resolved = undefined;
           }
-          return this.localeConfig[matched];
-        });
-        if (!resolved) {
-          p.resolved = undefined;
+        } else if (p.insert) {
+          if (this.localeConfig.hasOwnProperty(p.insert.value)) {
+            p.insert.resolved = this.localeConfig[p.insert.value];
+          }
         }
       });
     });
@@ -194,9 +197,9 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       try {
         t.patterns.forEach((p) => {
-          if (p.insert) {
+          if (p.insert && p.insert.resolved) {
             let at = p.insert.at;
-            let value = p.insert.value;
+            let value = p.insert.resolved;
             if (at === 'begin') {
               let content = fs.readFileSync(file, 'utf8');
               fs.writeFileSync(file, value + content, 'utf8');
