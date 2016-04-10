@@ -85,6 +85,18 @@ export default class I18nPatch {
 
   buildPatterns() {
     this.config.translations.forEach((t) => {
+      if (t.conditionals) {
+        t.conditionals.forEach((c) => {
+          if (c.insert) {
+            if (this.localeConfig.hasOwnProperty(c.insert.value)) {
+              c.insert.resolved = this.localeConfig[c.insert.value];
+              if (c.insert.resolved && !c.insert.resolved.endsWith('\n')) {
+                c.insert.resolved += '\n';
+              }
+            }
+          }
+        });
+      }
       t.patterns.forEach((p) => {
         let resolved = false;
         if (p.replace) {
@@ -227,6 +239,21 @@ export default class I18nPatch {
           }
           if (before !== result) {
             matched = true;
+            if (t.conditionals) {
+              t.conditionals.forEach((c) => {
+                if (c.insert && c.insert.resolved) {
+                  if (c.insert.at === 'begin') {
+                    if (beginBuffer.indexOf(c.insert.resolved) < 0) {
+                      beginBuffer.push(c.insert.resolved);
+                    }
+                  } else if (c.insert.at === 'end') {
+                    if (endBuffer.indexOf(c.insert.resolved) < 0) {
+                      endBuffer.push(c.insert.resolved);
+                    }
+                  }
+                }
+              });
+            }
           }
         });
         // TODO Preserve original newline if possible
