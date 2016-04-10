@@ -31,6 +31,7 @@
     "pattern"
   ],
   "dependencies": {
+    "async": "^2.0.0-rc.3",
     "fs-extra": "^0.26.7",
     "glob": "^7.0.3",
     "js-yaml": "^3.5.5",

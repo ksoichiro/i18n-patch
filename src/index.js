@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
 import rl from 'readline';
+const async = require('async');
 const yaml = require('js-yaml');
 const temp = require('temp').track();
 const pathExists = require('path-exists');
@@ -103,14 +104,16 @@ export default class I18nPatch {
           reject(err);
           return;
         }
-        Promise.all(files.map((file) => {
-          return this.processFile(t, file);
-        }))
-        .catch((err) => {
-          reject(err);
-        })
-        .then((file) => {
-          resolve(file);
+        async.each(files, (file, cb) => {
+          this.processFile(t, file)
+          .catch((err) => cb(err))
+          .then(() => cb());
+        }, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         });
       });
     });
