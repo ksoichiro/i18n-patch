@@ -14,68 +14,69 @@ $ npm install -g i18n-patch
 
 ```
   Usage
-    $ i18n-patch <locale>
+    $ i18n-patch <locale> <src> [<dest>]
 
   Options
     --config  Base path for config files.
-              i18n.json and <locale>.json is required.
-    --src     Base path for source files.
-              Current directory by default.
-    --out     Base path for output files.
-              'out' by default.
+              i18n.yml and <locale>.yml is required.
+              json is also available instead of yaml.
+              'config' by default.
 
   Examples
-    $ i18n-patch --config config --src src --out dist ja
+    $ i18n-patch --config example/config ja example/src example/out
 ```
 
 ## Example
 
-```console
-$ cd example
-$ cat i18n.json
-{
-  "translations": [
-    {
-      "src": "**/*.js",
-      "patterns": [
-        {
-          "pattern": "preview.text(\"Nothing to preview.\");",
-          "replace": "preview.text(\"${nothingToPreview}\");"
-        },
-        {
-          "pattern": "preview.text(\"Loading...\");",
-          "replace": "preview.text(\"${loading}\");"
-        }
-      ]
-    }
-  ]
-}
+example/i18n.yml:
 
-$ cat ja.json
-{
-  "nothingToPreview": "プレビューする内容がありません",
-  "loading": "読み込み中..."
-}
-
-$ cat src/js/sample.js
-preview.text("Nothing to preview.");
-preview.text("Loading...");
-
-$ i18n-patch ja
-
-$ cat out/js/sample.js
-preview.text("プレビューする内容がありません");
-preview.text("読み込み中...");
+```yaml
+translations:
+- src: '**/*.js'
+  patterns:
+  - pattern: preview.text("Nothing to preview.");
+    replace: preview.text("${nothingToPreview}");
+  - pattern: preview.text("Loading...");
+    replace: preview.text("${loading}");
 ```
 
-If you want to try, clone this repository and execute:
+example/ja.yml:
+
+```yaml
+nothingToPreview: プレビューする内容がありません
+loading: 読み込み中...
+```
+
+example/src/js/sample.js:
+
+```javascript
+preview.text("Nothing to preview.");
+preview.text("Loading...");
+console.log('other codes should be untouched.');
+```
+
+After executing `i18n-patch ja src out` in `example` dir...
+
+example/out/js/sample.js:
+
+```javascript
+preview.text("プレビューする内容がありません");
+preview.text("読み込み中...");
+console.log('other codes should be untouched.');
+```
+
+If you want to try it by yourself, clone this repository and execute:
 
 ```console
 $ npm run build
-$ node lib/cli.js --config example --src example/src --out example/out ja
+$ npm start
 ```
 
 Then you can confirm the result in `example/out` directory.
+
+## Configuration
+
+This project is still frequently updated, so please refer the source code or ask me as an [issue](https://github.com/ksoichiro/i18n-patch/issues) if you need.
 
 ## Why?
 
