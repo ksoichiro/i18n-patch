@@ -21,7 +21,14 @@
     "node": ">=0.12.0"
   },
   "keywords": [
-    "cli"
+    "cli",
+    "i18n",
+    "internationalization",
+    "l10n",
+    "localization",
+    "translation",
+    "replace",
+    "pattern"
   ],
   "dependencies": {
     "fs-extra": "^0.26.7",
