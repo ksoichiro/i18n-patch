@@ -87,13 +87,12 @@ export default class I18nPatch {
     for (let t of this.config.translations) {
       if (t.conditionals) {
         for (let c of t.conditionals) {
-          if (c.insert) {
-            if (this.localeConfig.hasOwnProperty(c.insert.value)) {
-              c.insert.resolved = this.localeConfig[c.insert.value];
-              if (c.insert.resolved && !c.insert.resolved.endsWith('\n')) {
-                c.insert.resolved += '\n';
-              }
-            }
+          if (!c.insert || !this.localeConfig.hasOwnProperty(c.insert.value)) {
+            continue;
+          }
+          c.insert.resolved = this.localeConfig[c.insert.value];
+          if (c.insert.resolved && !c.insert.resolved.endsWith('\n')) {
+            c.insert.resolved += '\n';
           }
         }
       }
@@ -110,12 +109,10 @@ export default class I18nPatch {
             p.resolved = undefined;
           }
         }
-        if (p.insert) {
-          if (this.localeConfig.hasOwnProperty(p.insert.value)) {
-            p.insert.resolved = this.localeConfig[p.insert.value];
-            if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
-              p.insert.resolved += '\n';
-            }
+        if (p.insert && this.localeConfig.hasOwnProperty(p.insert.value)) {
+          p.insert.resolved = this.localeConfig[p.insert.value];
+          if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
+            p.insert.resolved += '\n';
           }
         }
       }
@@ -216,41 +213,44 @@ export default class I18nPatch {
       lr.on('line', (line) => {
         let result = line;
         for (let p of t.patterns) {
+          if (!p.resolved) {
+            continue;
+          }
           let before = result;
-          if (p.resolved) {
-            let resolved = p.resolved;
-            if (p.args) {
-              for (let i = 0; i < p.args.length; i++) {
-                resolved = resolved.replace(`{${i}}`, p.args[i]);
-              }
+          let resolved = p.resolved;
+          if (p.args) {
+            for (let i = 0; i < p.args.length; i++) {
+              resolved = resolved.replace(`{${i}}`, p.args[i]);
             }
-            result = result.replace(p.pattern, resolved);
-            if (p.insert && p.insert.resolved) {
-              if (p.insert.at === 'begin') {
-                if (beginBuffer.indexOf(p.insert.resolved) < 0) {
-                  beginBuffer.push(p.insert.resolved);
-                }
-              } else if (p.insert.at === 'end') {
-                if (endBuffer.indexOf(p.insert.resolved) < 0) {
-                  endBuffer.push(p.insert.resolved);
-                }
+          }
+          result = result.replace(p.pattern, resolved);
+          if (p.insert && p.insert.resolved) {
+            if (p.insert.at === 'begin') {
+              if (beginBuffer.indexOf(p.insert.resolved) < 0) {
+                beginBuffer.push(p.insert.resolved);
+              }
+            } else if (p.insert.at === 'end') {
+              if (endBuffer.indexOf(p.insert.resolved) < 0) {
+                endBuffer.push(p.insert.resolved);
               }
             }
           }
-          if (before !== result) {
-            matched = true;
-            if (t.conditionals) {
-              for (let c of t.conditionals) {
-                if (c.insert && c.insert.resolved) {
-                  if (c.insert.at === 'begin') {
-                    if (beginBuffer.indexOf(c.insert.resolved) < 0) {
-                      beginBuffer.push(c.insert.resolved);
-                    }
-                  } else if (c.insert.at === 'end') {
-                    if (endBuffer.indexOf(c.insert.resolved) < 0) {
-                      endBuffer.push(c.insert.resolved);
-                    }
-                  }
+          if (before === result) {
+            continue;
+          }
+          matched = true;
+          if (t.conditionals) {
+            for (let c of t.conditionals) {
+              if (!c.insert || !c.insert.resolved) {
+                continue;
+              }
+              if (c.insert.at === 'begin') {
+                if (beginBuffer.indexOf(c.insert.resolved) < 0) {
+                  beginBuffer.push(c.insert.resolved);
+                }
+              } else if (c.insert.at === 'end') {
+                if (endBuffer.indexOf(c.insert.resolved) < 0) {
+                  endBuffer.push(c.insert.resolved);
                 }
               }
             }
@@ -274,22 +274,23 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       try {
         for (let p of t.patterns) {
-          if (!p.pattern && p.insert && p.insert.resolved) {
-            let at = p.insert.at;
-            let value = p.insert.resolved;
-            if (!value.endsWith('\n')) {
-              value += '\n';
+          if (p.pattern || !p.insert || !p.insert.resolved) {
+            continue;
+          }
+          let at = p.insert.at;
+          let value = p.insert.resolved;
+          if (!value.endsWith('\n')) {
+            value += '\n';
+          }
+          if (at === 'begin') {
+            let content = fs.readFileSync(file, 'utf8');
+            fs.writeFileSync(file, value + content, 'utf8');
+          } else if (at === 'end') {
+            let content = fs.readFileSync(file, 'utf8');
+            if (!content.endsWith('\n')) {
+              content += '\n';
             }
-            if (at === 'begin') {
-              let content = fs.readFileSync(file, 'utf8');
-              fs.writeFileSync(file, value + content, 'utf8');
-            } else if (at === 'end') {
-              let content = fs.readFileSync(file, 'utf8');
-              if (!content.endsWith('\n')) {
-                content += '\n';
-              }
-              fs.writeFileSync(file, content + value, 'utf8');
-            }
+            fs.writeFileSync(file, content + value, 'utf8');
           }
         }
         resolve();
