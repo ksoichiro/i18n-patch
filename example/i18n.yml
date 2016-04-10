@@ -22,3 +22,10 @@ translations:
     insert:
       at: begin
       value: encodingHeader
+  - pattern: '"Are you sure you delete \"#{bar}\"?"'
+    replace: '"${areYouSureYouDelete}"'
+    args:
+      - '#{bar}'
+    insert:
+      at: begin
+      value: encodingHeader

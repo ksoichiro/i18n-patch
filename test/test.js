@@ -58,6 +58,16 @@ class Foo
   end
 end
 `);
+    // Variables in translation is replaced
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'app/bar.rb'), 'utf8'),
+      `# encoding: utf-8
+class Bar
+  def delete_message(bar)
+    "本当に\\"#{bar}\\"を削除しますか？"
+  end
+end
+`);
     // Files that are not included are also copied
     t.is(
       fs.readFileSync(path.join(tempDir, 'html/hello.html'), 'utf8'),

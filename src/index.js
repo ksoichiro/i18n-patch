@@ -193,7 +193,13 @@ export default class I18nPatch {
         t.patterns.forEach((p) => {
           let before = result;
           if (p.resolved) {
-            result = result.replace(p.pattern, p.resolved);
+            let resolved = p.resolved;
+            if (p.args) {
+              for (let i = 0; i < p.args.length; i++) {
+                resolved = resolved.replace(`{${i}}`, p.args[i]);
+              }
+            }
+            result = result.replace(p.pattern, resolved);
             if (p.insert && p.insert.resolved) {
               if (p.insert.at === 'begin') {
                 if (beginBuffer.indexOf(p.insert.resolved) < 0) {
