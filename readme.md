@@ -3,6 +3,8 @@
 > Replacing codes for i18n with patterns.
 
 [![Travis master](https://img.shields.io/travis/ksoichiro/i18n-patch/master.svg?style=flat-square)](https://travis-ci.org/ksoichiro/i18n-patch)
+[![npm](https://img.shields.io/npm/v/i18n-patch.svg?style=flat-square)](https://www.npmjs.com/package/i18n-patch)
+![npm](https://img.shields.io/npm/l/i18n-patch.svg?style=flat-square)
 
 ## Install
 
