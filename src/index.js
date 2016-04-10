@@ -300,12 +300,6 @@ export default class I18nPatch {
   }
 
   hasPerFilePattern(t) {
-    let hasPerFilePattern = false;
-    for (let p of t.patterns) {
-      if (p.insert) {
-        hasPerFilePattern = true;
-      }
-    }
-    return hasPerFilePattern;
+    return !!t.patterns.find(p => p.insert);
   }
 }
