@@ -12,9 +12,17 @@ export default class I18nPatch {
     this.options = options || {};
   }
 
-  generate() {
-    this.config = this.readConfigFile('i18n.json');
-    this.localeConfig = this.readConfigFile(`${this.locale}.json`);
+  generate(config, localeConfig) {
+    if (config) {
+      this.config = config;
+    } else {
+      this.config = this.readConfigFile('i18n.json');
+    }
+    if (localeConfig) {
+      this.localeConfig = localeConfig;
+    } else {
+      this.localeConfig = this.readConfigFile(`${this.locale}.json`);
+    }
     this.buildPatterns();
     return new Promise((resolve, reject) => {
       Promise.all(this.config.translations.map((t) => {
@@ -45,9 +53,16 @@ export default class I18nPatch {
   buildPatterns() {
     this.config.translations.forEach((t) => {
       t.patterns.forEach((p) => {
+        let resolved = false;
         p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
+          if (this.localeConfig.hasOwnProperty(matched)) {
+            resolved = true;
+          }
           return this.localeConfig[matched];
         });
+        if (!resolved) {
+          p.resolved = undefined;
+        }
       });
     });
   }
@@ -106,7 +121,9 @@ export default class I18nPatch {
         let result = line;
         t.patterns.forEach((p) => {
           let before = result;
-          result = result.replace(p.pattern, p.resolved);
+          if (p.resolved) {
+            result = result.replace(p.pattern, p.resolved);
+          }
           if (before !== result) {
             matched = true;
           }
