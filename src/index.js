@@ -13,16 +13,7 @@ export default class I18nPatch {
   }
 
   generate(config, localeConfig) {
-    if (config) {
-      this.config = config;
-    } else {
-      this.config = this.readConfigFile('i18n.json');
-    }
-    if (localeConfig) {
-      this.localeConfig = localeConfig;
-    } else {
-      this.localeConfig = this.readConfigFile(`${this.locale}.json`);
-    }
+    this.setConfigs(config, localeConfig);
     this.buildPatterns();
     return new Promise((resolve, reject) => {
       Promise.all(this.config.translations.map((t) => {
@@ -35,6 +26,11 @@ export default class I18nPatch {
         resolve();
       });
     });
+  }
+
+  setConfigs(config, localeConfig) {
+    this.config = config || this.readConfigFile('i18n.json');
+    this.localeConfig = localeConfig || this.readConfigFile(`${this.locale}.json`);
   }
 
   readConfigFile(name) {
