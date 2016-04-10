@@ -10,10 +10,6 @@ test.before(() => {
   temp.track();
 });
 
-test.afterEach(() => {
-  temp.cleanupSync();
-});
-
 test('single pattern', t => {
   let tempDir = temp.mkdirSync('out');
   let locale = 'ja';
