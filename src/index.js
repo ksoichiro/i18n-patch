@@ -86,6 +86,9 @@ export default class I18nPatch {
     this.config.translations.forEach((t) => {
       t.patterns.forEach((p) => {
         let resolved = false;
+        if (!p.replace) {
+          return;
+        }
         p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
           if (this.localeConfig.hasOwnProperty(matched)) {
             resolved = true;
@@ -125,6 +128,23 @@ export default class I18nPatch {
 
   processFile(t, file) {
     return new Promise((resolve, reject) => {
+      this.processFilePerLine(t, file)
+      .catch((err) => reject(err))
+      .then((file) => {
+        if (this.hasPerFilePattern(t)) {
+          this.processFilePerFile(t, file)
+          .catch((err) => reject(err))
+          .then((file) => resolve(file));
+        } else {
+          resolve(file);
+        }
+      });
+    });
+  }
+
+  processFilePerLine(t, file) {
+    return new Promise((resolve, reject) => {
+      // Per-line processing
       let matched = false;
       let error;
       let lr = rl.createInterface({
@@ -168,5 +188,38 @@ export default class I18nPatch {
         out.end();
       });
     });
+  }
+
+  processFilePerFile(t, file) {
+    return new Promise((resolve, reject) => {
+      try {
+        t.patterns.forEach((p) => {
+          if (p.insert) {
+            let at = p.insert.at;
+            let value = p.insert.value;
+            if (at === 'begin') {
+              let content = fs.readFileSync(file, 'utf8');
+              fs.writeFileSync(file, value + content, 'utf8');
+            } else if (at === 'end') {
+              let content = fs.readFileSync(file, 'utf8');
+              fs.writeFileSync(file, content + value, 'utf8');
+            }
+          }
+        });
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  hasPerFilePattern(t) {
+    let hasPerFilePattern = false;
+    t.patterns.forEach((p) => {
+      if (p.insert) {
+        hasPerFilePattern = true;
+      }
+    });
+    return hasPerFilePattern;
   }
 }

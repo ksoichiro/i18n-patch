@@ -5,3 +5,17 @@ translations:
     replace: preview.text("${nothingToPreview}");
   - pattern: preview.text("Loading...");
     replace: preview.text("${loading}");
+- src: '**/bar1.js'
+  patterns:
+  - insert:
+      at: begin
+      value: |
+             appended.code();
+             console.log('ok');
+- src: '**/bar2.js'
+  patterns:
+  - insert:
+      at: end
+      value: |
+             appended.code();
+             console.log('ok');

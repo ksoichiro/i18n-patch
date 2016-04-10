@@ -10,7 +10,7 @@ test.before(() => {
   temp.track();
 });
 
-test('single pattern', t => {
+test('normal patterns', t => {
   let tempDir = temp.mkdirSync('out');
   let opts = {
     config: '../example',
@@ -34,6 +34,21 @@ console.log('other codes should be untouched.');
       fs.readFileSync(path.join(tempDir, 'js/foo.js'), 'utf8'),
       `console.log('example');
 `);
+    // Codes are inserted at the begining of the file
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'js/bar1.js'), 'utf8'),
+      `appended.code();
+console.log('ok');
+console.log('bar');
+`);
+    // Codes are inserted at the end of the file
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'js/bar2.js'), 'utf8'),
+      `console.log('bar');
+appended.code();
+console.log('ok');
+`);
+    // Files that are not included are also copied
     t.is(
       fs.readFileSync(path.join(tempDir, 'html/hello.html'), 'utf8'),
       `<html>
