@@ -10,12 +10,15 @@ export default class I18nPatch {
   constructor(locale, options) {
     this.locale = locale;
     this.options = options || {};
+    this.options.out = this.options.out || 'out';
   }
 
   generate(config, localeConfig) {
     this.setConfigs(config, localeConfig);
     this.buildPatterns();
     return new Promise((resolve, reject) => {
+      fs.copySync(this.options.src, this.options.out);
+
       Promise.all(this.config.translations.map((t) => {
         return this.processTranslation(t);
       }))
@@ -65,8 +68,8 @@ export default class I18nPatch {
 
   processTranslation(t) {
     return new Promise((resolve, reject) => {
-      const basePath = this.options.src || '.';
-      let srcPaths = t.src ? path.join(basePath, t.src) : basePath;
+      let srcGlob = t.src || '**/*';
+      let srcPaths = path.join(this.options.out, srcGlob);
       glob(srcPaths, null, (err, files) => {
         if (err) {
           reject(err);
@@ -89,9 +92,6 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       let matched = false;
       let error;
-      let dest = path.join(this.options.out || 'out',
-        path.relative(this.options.src, file));
-      fs.mkdirsSync(path.dirname(dest));
       let lr = rl.createInterface({
         input: fs.createReadStream(file)
       });
@@ -106,10 +106,7 @@ export default class I18nPatch {
         }
         if (matched) {
           // TODO Preserve original file stats
-          fs.copySync(out.path, dest);
-        } else {
-          // Just copy original file
-          fs.copySync(file, dest);
+          fs.copySync(out.path, file);
         }
         resolve(file);
       });

@@ -34,6 +34,14 @@ console.log('other codes should be untouched.');
       fs.readFileSync(path.join(tempDir, 'js/foo.js'), 'utf8'),
       `console.log('example');
 `);
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'html/hello.html'), 'utf8'),
+      `<html>
+<body>
+Hello world!
+</body>
+</html>
+`);
     t.pass();
   });
 });
