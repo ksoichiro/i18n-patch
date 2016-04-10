@@ -28,14 +28,18 @@ export default class I18nPatch {
         fs.copySync(this.src, this.options.dest);
       }
 
-      Promise.all(this.config.translations.map((t) => {
-        return this.processTranslation(t);
-      }))
-      .catch((err) => {
-        reject(err);
-      })
-      .then(() => {
-        resolve();
+      async.waterfall(this.config.translations.map((t) => {
+        return (cb) => {
+          this.processTranslation(t)
+          .catch((err) => cb(err))
+          .then(() => cb());
+        };
+      }), (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
       });
     });
   }
