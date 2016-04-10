@@ -96,7 +96,8 @@ export default class I18nPatch {
           if (!resolved) {
             p.resolved = undefined;
           }
-        } else if (p.insert) {
+        }
+        if (p.insert) {
           if (this.localeConfig.hasOwnProperty(p.insert.value)) {
             p.insert.resolved = this.localeConfig[p.insert.value];
           }
@@ -149,6 +150,8 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       // Per-line processing
       let matched = false;
+      let beginBuffer = [];
+      let endBuffer = [];
       let error;
       let lr = rl.createInterface({
         input: fs.createReadStream(file)
@@ -165,6 +168,23 @@ export default class I18nPatch {
         if (matched) {
           // TODO Preserve original file stats
           fs.copySync(out.path, file);
+
+          if (1 <= beginBuffer.length) {
+            let value = '';
+            beginBuffer.forEach((e) => {
+              value += `${e}\n`;
+            });
+            let content = fs.readFileSync(file, 'utf8');
+            fs.writeFileSync(file, value + content, 'utf8');
+          }
+          if (1 <= endBuffer.length) {
+            let value = '';
+            endBuffer.forEach((e) => {
+              value += `${e}\n`;
+            });
+            let content = fs.readFileSync(file, 'utf8');
+            fs.writeFileSync(file, value + content, 'utf8');
+          }
         }
         resolve(file);
       });
@@ -174,6 +194,17 @@ export default class I18nPatch {
           let before = result;
           if (p.resolved) {
             result = result.replace(p.pattern, p.resolved);
+            if (p.insert && p.insert.resolved) {
+              if (p.insert.at === 'begin') {
+                if (beginBuffer.indexOf(p.insert.resolved) < 0) {
+                  beginBuffer.push(p.insert.resolved);
+                }
+              } else if (p.insert.at === 'end') {
+                if (endBuffer.indexOf(p.insert.resolved) < 0) {
+                  endBuffer.push(p.insert.resolved);
+                }
+              }
+            }
           }
           if (before !== result) {
             matched = true;
@@ -197,7 +228,7 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       try {
         t.patterns.forEach((p) => {
-          if (p.insert && p.insert.resolved) {
+          if (!p.pattern && p.insert && p.insert.resolved) {
             let at = p.insert.at;
             let value = p.insert.resolved;
             if (at === 'begin') {

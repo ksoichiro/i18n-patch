@@ -48,6 +48,16 @@ console.log('bar');
 appended.code(2);
 console.log('ok');
 `);
+    // Codes are inserted at the beginning of the file, when matched to the pattern
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'app/foo.rb'), 'utf8'),
+      `# encoding: utf-8
+class Foo
+  def create
+    redirect_to foo_path, notice: '正常に作成されました'
+  end
+end
+`);
     // Files that are not included are also copied
     t.is(
       fs.readFileSync(path.join(tempDir, 'html/hello.html'), 'utf8'),

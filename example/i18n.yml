@@ -15,3 +15,10 @@ translations:
   - insert:
       at: end
       value: codeBar2
+- src: '**/*.rb'
+  patterns:
+  - pattern: "redirect_to foo_path, notice: 'Successfully created.'"
+    replace: "redirect_to foo_path, notice: '${fooSuccessfullyCreated}'"
+    insert:
+      at: begin
+      value: encodingHeader

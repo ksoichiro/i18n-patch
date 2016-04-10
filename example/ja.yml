@@ -6,3 +6,5 @@ codeBar1: |
 codeBar2: |
           appended.code(2);
           console.log('ok');
+fooSuccessfullyCreated: 正常に作成されました
+encodingHeader: '# encoding: utf-8'
