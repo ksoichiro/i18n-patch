@@ -84,9 +84,9 @@ export default class I18nPatch {
   }
 
   buildPatterns() {
-    this.config.translations.forEach((t) => {
+    for (let t of this.config.translations) {
       if (t.conditionals) {
-        t.conditionals.forEach((c) => {
+        for (let c of t.conditionals) {
           if (c.insert) {
             if (this.localeConfig.hasOwnProperty(c.insert.value)) {
               c.insert.resolved = this.localeConfig[c.insert.value];
@@ -95,9 +95,9 @@ export default class I18nPatch {
               }
             }
           }
-        });
+        }
       }
-      t.patterns.forEach((p) => {
+      for (let p of t.patterns) {
         let resolved = false;
         if (p.replace) {
           p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
@@ -118,8 +118,8 @@ export default class I18nPatch {
             }
           }
         }
-      });
-    });
+      }
+    }
   }
 
   processTranslation(t) {
@@ -187,23 +187,23 @@ export default class I18nPatch {
 
           if (1 <= beginBuffer.length) {
             let value = '';
-            beginBuffer.forEach((e) => {
+            for (let e of beginBuffer) {
               value += e;
               if (!e.endsWith('\n')) {
                 value += '\n';
               }
-            });
+            }
             let content = fs.readFileSync(file, 'utf8');
             fs.writeFileSync(file, value + content, 'utf8');
           }
           if (1 <= endBuffer.length) {
             let value = '';
-            endBuffer.forEach((e) => {
+            for (let e of endBuffer) {
               value += e;
               if (!e.endsWith('\n')) {
                 value += '\n';
               }
-            });
+            }
             let content = fs.readFileSync(file, 'utf8');
             if (!content.endsWith('\n')) {
               content += '\n';
@@ -215,7 +215,7 @@ export default class I18nPatch {
       });
       lr.on('line', (line) => {
         let result = line;
-        t.patterns.forEach((p) => {
+        for (let p of t.patterns) {
           let before = result;
           if (p.resolved) {
             let resolved = p.resolved;
@@ -240,7 +240,7 @@ export default class I18nPatch {
           if (before !== result) {
             matched = true;
             if (t.conditionals) {
-              t.conditionals.forEach((c) => {
+              for (let c of t.conditionals) {
                 if (c.insert && c.insert.resolved) {
                   if (c.insert.at === 'begin') {
                     if (beginBuffer.indexOf(c.insert.resolved) < 0) {
@@ -252,10 +252,10 @@ export default class I18nPatch {
                     }
                   }
                 }
-              });
+              }
             }
           }
-        });
+        }
         // TODO Preserve original newline if possible
         out.write(`${result}\n`);
       })
@@ -273,7 +273,7 @@ export default class I18nPatch {
   processFilePerFile(t, file) {
     return new Promise((resolve, reject) => {
       try {
-        t.patterns.forEach((p) => {
+        for (let p of t.patterns) {
           if (!p.pattern && p.insert && p.insert.resolved) {
             let at = p.insert.at;
             let value = p.insert.resolved;
@@ -291,7 +291,7 @@ export default class I18nPatch {
               fs.writeFileSync(file, content + value, 'utf8');
             }
           }
-        });
+        }
         resolve();
       } catch (err) {
         reject(err);
@@ -301,11 +301,11 @@ export default class I18nPatch {
 
   hasPerFilePattern(t) {
     let hasPerFilePattern = false;
-    t.patterns.forEach((p) => {
+    for (let p of t.patterns) {
       if (p.insert) {
         hasPerFilePattern = true;
       }
-    });
+    }
     return hasPerFilePattern;
   }
 }
