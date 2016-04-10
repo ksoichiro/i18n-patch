@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
 import rl from 'readline';
+import 'babel-polyfill';
 const async = require('async');
 const yaml = require('js-yaml');
 const temp = require('temp').track();
@@ -100,6 +101,9 @@ export default class I18nPatch {
         if (p.insert) {
           if (this.localeConfig.hasOwnProperty(p.insert.value)) {
             p.insert.resolved = this.localeConfig[p.insert.value];
+            if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
+              p.insert.resolved += '\n';
+            }
           }
         }
       });
@@ -172,7 +176,10 @@ export default class I18nPatch {
           if (1 <= beginBuffer.length) {
             let value = '';
             beginBuffer.forEach((e) => {
-              value += `${e}\n`;
+              value += e;
+              if (!e.endsWith('\n')) {
+                value += '\n';
+              }
             });
             let content = fs.readFileSync(file, 'utf8');
             fs.writeFileSync(file, value + content, 'utf8');
@@ -180,10 +187,16 @@ export default class I18nPatch {
           if (1 <= endBuffer.length) {
             let value = '';
             endBuffer.forEach((e) => {
-              value += `${e}\n`;
+              value += e;
+              if (!e.endsWith('\n')) {
+                value += '\n';
+              }
             });
             let content = fs.readFileSync(file, 'utf8');
-            fs.writeFileSync(file, value + content, 'utf8');
+            if (!content.endsWith('\n')) {
+              content += '\n';
+            }
+            fs.writeFileSync(file, content + value, 'utf8');
           }
         }
         resolve(file);
@@ -237,11 +250,17 @@ export default class I18nPatch {
           if (!p.pattern && p.insert && p.insert.resolved) {
             let at = p.insert.at;
             let value = p.insert.resolved;
+            if (!value.endsWith('\n')) {
+              value += '\n';
+            }
             if (at === 'begin') {
               let content = fs.readFileSync(file, 'utf8');
               fs.writeFileSync(file, value + content, 'utf8');
             } else if (at === 'end') {
               let content = fs.readFileSync(file, 'utf8');
+              if (!content.endsWith('\n')) {
+                content += '\n';
+              }
               fs.writeFileSync(file, content + value, 'utf8');
             }
           }
