@@ -49,7 +49,7 @@
     "start": "node ./lib/cli",
     "build": "babel src -d lib -s inline",
     "watch": "babel src -d lib -s inline -w",
-    "test": "eslint src"
+    "test": "eslint src && ava"
   },
   "eslintConfig": {
     "env": {
