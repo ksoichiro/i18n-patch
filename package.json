@@ -33,7 +33,9 @@
   "dependencies": {
     "fs-extra": "^0.26.7",
     "glob": "^7.0.3",
+    "js-yaml": "^3.5.5",
     "meow": "^3.7.0",
+    "path-exists": "^2.1.0",
     "temp": "^0.8.3"
   },
   "devDependencies": {

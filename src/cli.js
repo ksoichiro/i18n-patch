@@ -10,7 +10,8 @@ const cli = meow(`
 
     Options
       --config  Base path for config files.
-                i18n.json and <locale>.json is required.
+                i18n.yml and <locale>.yml is required.
+                json is also available instead of yaml.
                 'config' by default.
 
     Examples

@@ -4,7 +4,9 @@ import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
 import rl from 'readline';
+const yaml = require('js-yaml');
 const temp = require('temp').track();
+const pathExists = require('path-exists');
 
 export default class I18nPatch {
   constructor(src, options) {
@@ -42,27 +44,37 @@ export default class I18nPatch {
   }
 
   setConfigs(config, localeConfig) {
-    this.config = config || this.readConfigFile('i18n.json');
+    this.config = config || this.readConfigFile('i18n');
     if (localeConfig) {
       this.localeConfig = localeConfig;
     } else {
       if (!this.options.locale) {
         throw new Error('Could not determine locale');
       }
-      this.localeConfig = this.readConfigFile(`${this.options.locale}.json`);
+      this.localeConfig = this.readConfigFile(this.options.locale);
     }
   }
 
   readConfigFile(name) {
-    let configPath = path.join(this.options.config, name);
-    let configFile;
-    try {
-      configFile = fs.readFileSync(configPath);
-    } catch (err) {
-      console.log(`Cannot read ${configPath}`);
-      process.exit(1);
+    let configPath = path.join(this.options.config, `${name}.yml`);
+    if (pathExists.sync(configPath)) {
+      try {
+        return yaml.safeLoad(fs.readFileSync(configPath, 'utf8'));
+      } catch (err) {
+        console.log(`Cannot read ${configPath}`);
+        console.log(err.stack);
+        process.exit(1);
+      }
+    } else {
+      configPath = path.join(this.options.config, `${name}.json`);
+      try {
+        return JSON.parse(fs.readFileSync(configPath));
+      } catch (err) {
+        console.log(`Cannot read ${configPath}`);
+        console.log(err.stack);
+        process.exit(1);
+      }
     }
-    return JSON.parse(configFile);
   }
 
   buildPatterns() {
