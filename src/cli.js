@@ -6,7 +6,7 @@
 // $ node lib/cli.js --config example --src example/src --out example/out ja
 
 import meow from 'meow';
-import I18nPatch from '.';
+import I18nPatch from './';
 
 const cli = meow(`
     Usage

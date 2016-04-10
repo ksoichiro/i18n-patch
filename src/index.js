@@ -77,13 +77,31 @@ export default class I18nPatch {
   processFile(t, file) {
     return new Promise((resolve, reject) => {
       let matched = false;
+      let error;
       let dest = path.join(this.options.out || 'out',
         path.relative(this.options.src, file));
       fs.mkdirsSync(path.dirname(dest));
       let lr = rl.createInterface({
         input: fs.createReadStream(file)
       });
-      let out = temp.createWriteStream();
+      let out = temp.createWriteStream()
+      .on('error', (err) => {
+        reject(err);
+      })
+      .on('close', () => {
+        if (error) {
+          // This can be set in 'error' callback of lr
+          return;
+        }
+        if (matched) {
+          // TODO Preserve original file stats
+          fs.copySync(out.path, dest);
+        } else {
+          // Just copy original file
+          fs.copySync(file, dest);
+        }
+        resolve(file);
+      });
       lr.on('line', (line) => {
         let result = line;
         t.patterns.forEach((p) => {
@@ -97,19 +115,12 @@ export default class I18nPatch {
         out.write(`${result}\n`);
       })
       .on('error', (err) => {
+        error = err;
         out.end();
         reject(err);
       })
       .on('close', () => {
-        if (matched) {
-          // TODO Preserve original file stats
-          fs.copySync(out.path, dest);
-        } else {
-          // Just copy original file
-          fs.copySync(file, dest);
-        }
         out.end();
-        resolve(file);
       });
     });
   }
