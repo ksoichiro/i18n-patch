@@ -7,17 +7,23 @@ import rl from 'readline';
 const temp = require('temp').track();
 
 export default class I18nPatch {
-  constructor(locale, options) {
-    this.locale = locale;
+  constructor(src, options) {
+    if (!src) {
+      throw new Error('src is required');
+    }
+    this.src = src;
     this.options = options || {};
-    this.options.out = this.options.out || 'out';
+    this.options.dest = this.options.dest || this.src;
+    this.options.config = this.options.config || 'config';
   }
 
   generate(config, localeConfig) {
-    this.setConfigs(config, localeConfig);
-    this.buildPatterns();
     return new Promise((resolve, reject) => {
-      fs.copySync(this.options.src, this.options.out);
+      this.setConfigs(config, localeConfig);
+      this.buildPatterns();
+      if (this.hasDest()) {
+        fs.copySync(this.src, this.options.dest);
+      }
 
       Promise.all(this.config.translations.map((t) => {
         return this.processTranslation(t);
@@ -31,14 +37,24 @@ export default class I18nPatch {
     });
   }
 
+  hasDest() {
+    return this.src !== this.options.dest;
+  }
+
   setConfigs(config, localeConfig) {
     this.config = config || this.readConfigFile('i18n.json');
-    this.localeConfig = localeConfig || this.readConfigFile(`${this.locale}.json`);
+    if (localeConfig) {
+      this.localeConfig = localeConfig;
+    } else {
+      if (!this.options.locale) {
+        throw new Error('Could not determine locale');
+      }
+      this.localeConfig = this.readConfigFile(`${this.options.locale}.json`);
+    }
   }
 
   readConfigFile(name) {
-    const basePath = this.options.config || '.';
-    let configPath  = path.join(basePath, name);
+    let configPath = path.join(this.options.config, name);
     let configFile;
     try {
       configFile = fs.readFileSync(configPath);
@@ -69,7 +85,7 @@ export default class I18nPatch {
   processTranslation(t) {
     return new Promise((resolve, reject) => {
       let srcGlob = t.src || '**/*';
-      let srcPaths = path.join(this.options.out, srcGlob);
+      let srcPaths = path.join(this.options.dest, srcGlob);
       glob(srcPaths, null, (err, files) => {
         if (err) {
           reject(err);

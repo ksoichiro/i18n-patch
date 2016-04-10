@@ -1,40 +1,33 @@
 #!/usr/bin/env node
 'use strict';
 
-// Note for development:
-// $ npm run watch
-// $ node lib/cli.js --config example --src example/src --out example/out ja
-
 import meow from 'meow';
 import I18nPatch from './';
 
 const cli = meow(`
     Usage
-      $ i18n-patch <locale>
+      $ i18n-patch <locale> <src> [<dest>]
 
     Options
       --config  Base path for config files.
                 i18n.json and <locale>.json is required.
-      --src     Base path for source files.
-                Current directory by default.
-      --out     Base path for output files. 'out' by default.
-                This directory should be clean,
-                but this tool does not clean it.
-                You must remove the directory by yourself.
+                'config' by default.
 
     Examples
-      $ i18n-patch --config example --src example/src --out example/out ja
+      $ i18n-patch --config example/config ja example/src example/out
 `);
 
-const locale = cli.input[0];
 const opts = cli.flags;
+opts.locale = cli.input[0];
+opts.dest = cli.input[2];
+const src = cli.input[1];
 
-if (!locale) {
+if (!opts.locale || !src) {
   cli.showHelp();
   process.exit(0);
 }
 
-new I18nPatch(locale, opts)
+new I18nPatch(src, opts)
 .generate()
 .catch((err) => {
   console.log(err);

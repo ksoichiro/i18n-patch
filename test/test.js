@@ -12,15 +12,15 @@ test.before(() => {
 
 test('single pattern', t => {
   let tempDir = temp.mkdirSync('out');
-  let locale = 'ja';
   let opts = {
     config: '../example',
-    src: '../example/src',
-    out: tempDir
+    locale: 'ja',
+    dest: tempDir
   };
-  return new I18nPatch(locale, opts)
+  return new I18nPatch('../example/src', opts)
   .generate()
   .catch((err) => {
+    console.log(err.stack);
     t.fail(err);
   })
   .then(() => {
@@ -48,7 +48,6 @@ Hello world!
 
 test('not translate if translation is undefined', t => {
   let tempDir = temp.mkdirSync('out');
-  let locale = 'ja';
   let config = {
     "translations": [
       {
@@ -69,11 +68,7 @@ test('not translate if translation is undefined', t => {
   let localeConfig = {
     "loading": "読み込み中..."
   }
-  let opts = {
-    src: '../example/src',
-    out: tempDir
-  };
-  return new I18nPatch(locale, opts)
+  return new I18nPatch('../example/src', { dest: tempDir })
   .generate(config, localeConfig)
   .catch((err) => {
     t.fail(err);
