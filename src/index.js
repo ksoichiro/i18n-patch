@@ -206,37 +206,7 @@ export default class I18nPatch {
             continue;
           }
           let before = result;
-          let resolved = p.resolved;
-          if (p.args) {
-            // TODO apply args to resolved recursively
-            for (let i = 0; i < p.args.length; i++) {
-              let argResolved = p.argsResolved[i];
-              if (argResolved) {
-                if (argResolved.replace && typeof argResolved.replace !== 'function') {
-                  if (argResolved.resolved) {
-                    if (argResolved.args) {
-                      for (let j = 0; j < argResolved.args.length; j++) {
-                        let argResolvedArgResolved = argResolved.argsResolved[j];
-                        if (argResolvedArgResolved) {
-                          argResolved.resolved = argResolved.resolved.replace(`{${j}}`, argResolvedArgResolved);
-                        } else {
-                          argResolved.resolved = argResolved.resolved.replace(`{${j}}`, argResolved.args[j]);
-                        }
-                      }
-                    }
-                    resolved = resolved.replace(`{${i}}`, argResolved.resolved);
-                  } else {
-                    resolved = resolved.replace(`{${i}}`, argResolved.replace);
-                  }
-                } else {
-                  resolved = resolved.replace(`{${i}}`, argResolved);
-                }
-              } else {
-                resolved = resolved.replace(`{${i}}`, p.args[i]);
-              }
-            }
-          }
-          result = result.replace(p.pattern, resolved);
+          result = this.applyToResolved(result, p, p.pattern);
           if (p.insert && p.insert.resolved) {
             if (p.insert.at === 'begin') {
               if (beginBuffer.indexOf(p.insert.resolved) < 0) {
@@ -354,5 +324,42 @@ export default class I18nPatch {
         }
       }
     }
+  }
+
+  applyToResolved(target, obj, pattern) {
+    let resolved = obj.resolved;
+    if (obj.args) {
+      for (let i = 0; i < obj.args.length; i++) {
+        let argResolved = obj.argsResolved[i];
+        if (argResolved) {
+          if (argResolved.replace && typeof argResolved.replace !== 'function') {
+            if (argResolved.resolved) {
+              resolved = this.applyToArgResolved(resolved, argResolved, `{${i}}`);
+            } else {
+              resolved = resolved.replace(`{${i}}`, argResolved.replace);
+            }
+          } else {
+            resolved = resolved.replace(`{${i}}`, argResolved);
+          }
+        } else {
+          resolved = resolved.replace(`{${i}}`, obj.args[i]);
+        }
+      }
+    }
+    return target.replace(pattern, resolved);
+  }
+
+  applyToArgResolved(target, obj, pattern) {
+    if (obj.args) {
+      for (let i = 0; i < obj.args.length; i++) {
+        let argResolved = obj.argsResolved[i];
+        if (argResolved) {
+          obj.resolved = this.applyToArgResolved(obj.resolved, argResolved, `{${i}}`);
+        } else {
+          obj.resolved = obj.resolved.replace(`{${i}}`, obj.args[i]);
+        }
+      }
+    }
+    return target.replace(pattern, obj.resolved);
   }
 }
