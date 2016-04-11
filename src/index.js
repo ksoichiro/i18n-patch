@@ -97,18 +97,7 @@ export default class I18nPatch {
         }
       }
       for (let p of t.patterns) {
-        let resolved = false;
-        if (p.replace) {
-          p.resolved = p.replace.replace(/\${([^}]*)}/g, (all, matched) => {
-            if (this.localeConfig.hasOwnProperty(matched)) {
-              resolved = true;
-            }
-            return this.localeConfig[matched];
-          });
-          if (!resolved) {
-            p.resolved = undefined;
-          }
-        }
+        this.resolve(p);
         if (p.insert && this.localeConfig.hasOwnProperty(p.insert.value)) {
           p.insert.resolved = this.localeConfig[p.insert.value];
           if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
@@ -219,8 +208,32 @@ export default class I18nPatch {
           let before = result;
           let resolved = p.resolved;
           if (p.args) {
+            // TODO apply args to resolved recursively
             for (let i = 0; i < p.args.length; i++) {
-              resolved = resolved.replace(`{${i}}`, p.args[i]);
+              let argResolved = p.argsResolved[i];
+              if (argResolved) {
+                if (argResolved.replace && typeof argResolved.replace !== 'function') {
+                  if (argResolved.resolved) {
+                    if (argResolved.args) {
+                      for (let j = 0; j < argResolved.args.length; j++) {
+                        let argResolvedArgResolved = argResolved.argsResolved[j];
+                        if (argResolvedArgResolved) {
+                          argResolved.resolved = argResolved.resolved.replace(`{${j}}`, argResolvedArgResolved);
+                        } else {
+                          argResolved.resolved = argResolved.resolved.replace(`{${j}}`, argResolved.args[j]);
+                        }
+                      }
+                    }
+                    resolved = resolved.replace(`{${i}}`, argResolved.resolved);
+                  } else {
+                    resolved = resolved.replace(`{${i}}`, argResolved.replace);
+                  }
+                } else {
+                  resolved = resolved.replace(`{${i}}`, argResolved);
+                }
+              } else {
+                resolved = resolved.replace(`{${i}}`, p.args[i]);
+              }
             }
           }
           result = result.replace(p.pattern, resolved);
@@ -302,5 +315,44 @@ export default class I18nPatch {
 
   hasPerFilePattern(t) {
     return !!t.patterns.find(p => p.insert);
+  }
+
+  resolve(obj) {
+    if (!obj.replace) {
+      return;
+    }
+
+    let resolved = false;
+    obj.resolved = obj.replace.replace(/\${([^}]*)}/g, (all, matched) => {
+      if (this.localeConfig.hasOwnProperty(matched)) {
+        resolved = true;
+      }
+      return this.localeConfig[matched];
+    });
+    if (!resolved) {
+      obj.resolved = undefined;
+    }
+
+    if (obj.args) {
+      obj.argsResolved = [];
+      for (let i = 0; i < obj.args.length; i++) {
+        let argResolved = false;
+        let a = obj.args[i];
+        if (a.replace && typeof a.replace !== 'function') {
+          this.resolve(a);
+          obj.argsResolved.push(a);
+        } else if (a) {
+          obj.argsResolved.push(a.replace(/\${([^}]*)}/g, (all, matched) => {
+            if (this.localeConfig.hasOwnProperty(matched)) {
+              argResolved = true;
+            }
+            return this.localeConfig[matched];
+          }));
+          if (!argResolved) {
+            obj.argsResolved[i] = undefined;
+          }
+        }
+      }
+    }
   }
 }

@@ -8,4 +8,6 @@ codeBar2: |
           console.log('ok');
 fooSuccessfullyCreated: 正常に作成されました
 encodingHeader: '# encoding: utf-8'
-areYouSureYouDelete: '本当に\"{0}\"を削除しますか？'
+areYouSureYouDoSth: 本当に{0}しますか？
+# TODO " should be escaped to \" automatically
+deleteSth: '\"{0}\"を削除'

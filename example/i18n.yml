@@ -24,6 +24,8 @@ translations:
   - pattern: "redirect_to foo_path, notice: 'Successfully created.'"
     replace: "redirect_to foo_path, notice: '${fooSuccessfullyCreated}'"
   - pattern: '"Are you sure you delete \"#{bar}\"?"'
-    replace: '"${areYouSureYouDelete}"'
+    replace: '"${areYouSureYouDoSth}"'
     args:
+    - replace: '${deleteSth}'
+      args:
       - '#{bar}'
