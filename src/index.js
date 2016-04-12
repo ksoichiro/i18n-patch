@@ -122,7 +122,7 @@ export default class I18nPatch {
           reject(err);
           return;
         }
-        async.each(files, (file, cb) => {
+        async.eachLimit(files, 100, (file, cb) => {
           this.processFile(t, file)
           .catch((err) => cb(err))
           .then(() => cb());
