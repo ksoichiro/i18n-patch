@@ -70,7 +70,7 @@ export default class I18nPatch {
     let configPath = path.join(this.options.config, `${name}.yml`);
     if (pathExists.sync(configPath)) {
       try {
-        return yaml.safeLoad(fs.readFileSync(configPath, ENCODING));
+        return yaml.load(fs.readFileSync(configPath, ENCODING));
       } catch (err) {
         console.log(`Cannot read ${configPath}`);
         console.log(err.stack);
