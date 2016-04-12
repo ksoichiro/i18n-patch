@@ -9,6 +9,7 @@ const async = require('async');
 const yaml = require('js-yaml');
 const temp = require('temp').track();
 const pathExists = require('path-exists');
+const camelCase = require('camelcase');
 
 const NEWLINE = '\n';
 const ENCODING = 'utf8';
@@ -63,6 +64,16 @@ export default class I18nPatch {
         throw new Error('Could not determine locale');
       }
       this.localeConfig = this.readConfigFile(this.options.locale);
+    }
+
+    for (let t of this.config.translations) {
+      Object.keys(t).forEach((key) => {
+        let converted = camelCase(key);
+        if (key !== converted) {
+          t[camelCase(key)] = t.key;
+          delete t[key];
+        }
+      });
     }
   }
 
