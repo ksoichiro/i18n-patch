@@ -87,7 +87,7 @@ export default class I18nPatch {
     for (let t of this.config.translations) {
       if (t.conditionals) {
         for (let c of t.conditionals) {
-          if (!c.insert || !this.localeConfig.hasOwnProperty(c.insert.value)) {
+          if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
             continue;
           }
           c.insert.resolved = this.localeConfig[c.insert.value];
@@ -98,7 +98,7 @@ export default class I18nPatch {
       }
       for (let p of t.patterns) {
         this.resolve(p);
-        if (p.insert && this.localeConfig.hasOwnProperty(p.insert.value)) {
+        if (p.insert && this.hasTranslationKey(p.insert.value)) {
           p.insert.resolved = this.localeConfig[p.insert.value];
           if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
             p.insert.resolved += '\n';
@@ -292,35 +292,16 @@ export default class I18nPatch {
       return;
     }
 
-    let resolved = false;
-    obj.resolved = obj.replace.replace(/\${([^}]*)}/g, (all, matched) => {
-      if (this.localeConfig.hasOwnProperty(matched)) {
-        resolved = true;
-      }
-      return this.localeConfig[matched];
-    });
-    if (!resolved) {
-      obj.resolved = undefined;
-    }
-
+    obj.resolved = this.resolveTranslationKey(obj.replace);
     if (obj.args) {
       obj.argsResolved = [];
       for (let i = 0; i < obj.args.length; i++) {
-        let argResolved = false;
         let a = obj.args[i];
         if (a.replace && typeof a.replace !== 'function') {
           this.resolve(a);
           obj.argsResolved.push(a);
         } else if (a) {
-          obj.argsResolved.push(a.replace(/\${([^}]*)}/g, (all, matched) => {
-            if (this.localeConfig.hasOwnProperty(matched)) {
-              argResolved = true;
-            }
-            return this.localeConfig[matched];
-          }));
-          if (!argResolved) {
-            obj.argsResolved[i] = undefined;
-          }
+          obj.argsResolved.push(this.resolveTranslationKey(a));
         }
       }
     }
@@ -361,5 +342,23 @@ export default class I18nPatch {
       }
     }
     return target.replace(pattern, obj.resolved);
+  }
+
+  hasTranslationKey(key) {
+    return this.localeConfig.hasOwnProperty(key);
+  }
+
+  resolveTranslationKey(target) {
+    let resolved = false;
+    let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
+      if (this.hasTranslationKey(matched)) {
+        resolved = true;
+      }
+      return this.localeConfig[matched];
+    });
+    if (!resolved) {
+      result = undefined;
+    }
+    return result;
   }
 }
