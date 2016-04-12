@@ -10,6 +10,11 @@ const yaml = require('js-yaml');
 const temp = require('temp').track();
 const pathExists = require('path-exists');
 
+const NEWLINE = '\n';
+const ENCODING = 'utf8';
+const INSERT_AT_BEGIN = 'begin';
+const INSERT_AT_END = 'end';
+
 export default class I18nPatch {
   constructor(src, options) {
     if (!src) {
@@ -65,7 +70,7 @@ export default class I18nPatch {
     let configPath = path.join(this.options.config, `${name}.yml`);
     if (pathExists.sync(configPath)) {
       try {
-        return yaml.safeLoad(fs.readFileSync(configPath, 'utf8'));
+        return yaml.safeLoad(fs.readFileSync(configPath, ENCODING));
       } catch (err) {
         console.log(`Cannot read ${configPath}`);
         console.log(err.stack);
@@ -91,8 +96,8 @@ export default class I18nPatch {
             continue;
           }
           c.insert.resolved = this.localeConfig[c.insert.value];
-          if (c.insert.resolved && !c.insert.resolved.endsWith('\n')) {
-            c.insert.resolved += '\n';
+          if (c.insert.resolved && !c.insert.resolved.endsWith(NEWLINE)) {
+            c.insert.resolved += NEWLINE;
           }
         }
       }
@@ -100,8 +105,8 @@ export default class I18nPatch {
         this.resolve(p);
         if (p.insert && this.hasTranslationKey(p.insert.value)) {
           p.insert.resolved = this.localeConfig[p.insert.value];
-          if (p.insert.resolved && !p.insert.resolved.endsWith('\n')) {
-            p.insert.resolved += '\n';
+          if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
+            p.insert.resolved += NEWLINE;
           }
         }
       }
@@ -175,26 +180,26 @@ export default class I18nPatch {
             let value = '';
             for (let e of beginBuffer) {
               value += e;
-              if (!e.endsWith('\n')) {
-                value += '\n';
+              if (!e.endsWith(NEWLINE)) {
+                value += NEWLINE;
               }
             }
-            let content = fs.readFileSync(file, 'utf8');
-            fs.writeFileSync(file, value + content, 'utf8');
+            let content = fs.readFileSync(file, ENCODING);
+            fs.writeFileSync(file, value + content, ENCODING);
           }
           if (1 <= endBuffer.length) {
             let value = '';
             for (let e of endBuffer) {
               value += e;
-              if (!e.endsWith('\n')) {
-                value += '\n';
+              if (!e.endsWith(NEWLINE)) {
+                value += NEWLINE;
               }
             }
-            let content = fs.readFileSync(file, 'utf8');
-            if (!content.endsWith('\n')) {
-              content += '\n';
+            let content = fs.readFileSync(file, ENCODING);
+            if (!content.endsWith(NEWLINE)) {
+              content += NEWLINE;
             }
-            fs.writeFileSync(file, content + value, 'utf8');
+            fs.writeFileSync(file, content + value, ENCODING);
           }
         }
         resolve(file);
@@ -208,11 +213,11 @@ export default class I18nPatch {
           let before = result;
           result = this.applyToResolved(result, p, p.pattern);
           if (p.insert && p.insert.resolved) {
-            if (p.insert.at === 'begin') {
+            if (p.insert.at === INSERT_AT_BEGIN) {
               if (beginBuffer.indexOf(p.insert.resolved) < 0) {
                 beginBuffer.push(p.insert.resolved);
               }
-            } else if (p.insert.at === 'end') {
+            } else if (p.insert.at === INSERT_AT_END) {
               if (endBuffer.indexOf(p.insert.resolved) < 0) {
                 endBuffer.push(p.insert.resolved);
               }
@@ -227,11 +232,11 @@ export default class I18nPatch {
               if (!c.insert || !c.insert.resolved) {
                 continue;
               }
-              if (c.insert.at === 'begin') {
+              if (c.insert.at === INSERT_AT_BEGIN) {
                 if (beginBuffer.indexOf(c.insert.resolved) < 0) {
                   beginBuffer.push(c.insert.resolved);
                 }
-              } else if (c.insert.at === 'end') {
+              } else if (c.insert.at === INSERT_AT_END) {
                 if (endBuffer.indexOf(c.insert.resolved) < 0) {
                   endBuffer.push(c.insert.resolved);
                 }
@@ -262,18 +267,18 @@ export default class I18nPatch {
           }
           let at = p.insert.at;
           let value = p.insert.resolved;
-          if (!value.endsWith('\n')) {
-            value += '\n';
+          if (!value.endsWith(NEWLINE)) {
+            value += NEWLINE;
           }
-          if (at === 'begin') {
-            let content = fs.readFileSync(file, 'utf8');
-            fs.writeFileSync(file, value + content, 'utf8');
-          } else if (at === 'end') {
-            let content = fs.readFileSync(file, 'utf8');
-            if (!content.endsWith('\n')) {
-              content += '\n';
+          if (at === INSERT_AT_BEGIN) {
+            let content = fs.readFileSync(file, ENCODING);
+            fs.writeFileSync(file, value + content, ENCODING);
+          } else if (at === INSERT_AT_END) {
+            let content = fs.readFileSync(file, ENCODING);
+            if (!content.endsWith(NEWLINE)) {
+              content += NEWLINE;
             }
-            fs.writeFileSync(file, content + value, 'utf8');
+            fs.writeFileSync(file, content + value, ENCODING);
           }
         }
         resolve();
