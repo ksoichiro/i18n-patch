@@ -136,8 +136,8 @@ export default class I18nPatch {
                 let npReplace = namedPattern.replace;
                 for (let npp of namedPattern.params) {
                   if (params.hasOwnProperty(npp)) {
-                    npPattern = npPattern.replace(`{${npp}}`, params[npp]);
-                    npReplace = npReplace.replace(`{${npp}}`, params[npp]);
+                    npPattern = npPattern.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
+                    npReplace = npReplace.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
                   }
                 }
                 let newPattern = {};
