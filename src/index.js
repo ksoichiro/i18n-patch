@@ -70,7 +70,7 @@ export default class I18nPatch {
       Object.keys(t).forEach((key) => {
         let converted = camelCase(key);
         if (key !== converted) {
-          t[camelCase(key)] = t.key;
+          t[camelCase(key)] = t[key];
           delete t[key];
         }
       });
@@ -113,6 +113,30 @@ export default class I18nPatch {
         }
       }
       for (let p of t.patterns) {
+        if (p.name) {
+          if (t.namedPatterns) {
+            let namedPattern;
+            for (let np of t.namedPatterns) {
+              if (p.name === np.name) {
+                namedPattern = np;
+                break;
+              }
+            }
+            if (namedPattern) {
+              let npPattern = namedPattern.pattern;
+              let npReplace = namedPattern.replace;
+              for (let npp of namedPattern.params) {
+                if (p.params.hasOwnProperty(npp)) {
+                  npPattern = npPattern.replace(`{${npp}}`, p.params[npp]);
+                  npReplace = npReplace.replace(`{${npp}}`, p.params[npp]);
+                }
+              }
+              p.pattern = new RegExp(npPattern);
+              p.replace = npReplace;
+            }
+          }
+        }
+
         this.resolve(p);
         if (p.insert && this.hasTranslationKey(p.insert.value)) {
           p.insert.resolved = this.localeConfig[p.insert.value];
