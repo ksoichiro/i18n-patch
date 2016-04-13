@@ -112,7 +112,9 @@ export default class I18nPatch {
           }
         }
       }
+      let patterns = [];
       for (let p of t.patterns) {
+        let added = false;
         if (p.name) {
           if (t.namedPatterns) {
             let namedPattern;
@@ -123,20 +125,36 @@ export default class I18nPatch {
               }
             }
             if (namedPattern) {
-              let npPattern = namedPattern.pattern;
-              let npReplace = namedPattern.replace;
-              for (let npp of namedPattern.params) {
-                if (p.params.hasOwnProperty(npp)) {
-                  npPattern = npPattern.replace(`{${npp}}`, p.params[npp]);
-                  npReplace = npReplace.replace(`{${npp}}`, p.params[npp]);
-                }
+              let paramsSet = [];
+              if (Array.isArray(p.params)) {
+                paramsSet = p.params;
+              } else {
+                paramsSet = [p.params];
               }
-              p.pattern = new RegExp(npPattern);
-              p.replace = npReplace;
+              for (let params of paramsSet) {
+                let npPattern = namedPattern.pattern;
+                let npReplace = namedPattern.replace;
+                for (let npp of namedPattern.params) {
+                  if (params.hasOwnProperty(npp)) {
+                    npPattern = npPattern.replace(`{${npp}}`, params[npp]);
+                    npReplace = npReplace.replace(`{${npp}}`, params[npp]);
+                  }
+                }
+                let newPattern = {};
+                newPattern.pattern = new RegExp(npPattern);
+                newPattern.replace = npReplace;
+                patterns.push(newPattern);
+                added = true;
+              }
             }
           }
         }
-
+        if (!added) {
+          patterns.push(p);
+        }
+      }
+      t.patterns = patterns;
+      for (let p of t.patterns) {
         this.resolve(p);
         if (p.insert && this.hasTranslationKey(p.insert.value)) {
           p.insert.resolved = this.localeConfig[p.insert.value];
