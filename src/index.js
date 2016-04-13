@@ -143,6 +143,9 @@ export default class I18nPatch {
                 let newPattern = {};
                 newPattern.pattern = new RegExp(npPattern);
                 newPattern.replace = npReplace;
+                if (namedPattern.args) {
+                  newPattern.args = namedPattern.args;
+                }
                 patterns.push(newPattern);
                 added = true;
               }
