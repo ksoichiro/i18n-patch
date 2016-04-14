@@ -118,3 +118,28 @@ console.log('other codes should be untouched.');
     t.pass();
   });
 });
+
+test('exception is thrown when src is not given', t => {
+  try {
+    new I18nPatch(null, null);
+    t.fail();
+  } catch (err) {
+    t.is(err.message, 'src is required');
+    t.pass();
+  }
+});
+
+test('exception is thrown when config not found', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let opts = {
+    config: path.join(tempDir, 'does_not_exist'),
+    locale: 'ja',
+    dest: tempDir
+  };
+  t.plan(1);
+  return new I18nPatch('../example/src', opts)
+  .generate()
+  .catch((err) => {
+    t.ok(err);
+  });
+});

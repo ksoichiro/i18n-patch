@@ -29,7 +29,11 @@ export default class I18nPatch {
 
   generate(config, localeConfig) {
     return new Promise((resolve, reject) => {
-      this.setConfigs(config, localeConfig);
+      try {
+        this.setConfigs(config, localeConfig);
+      } catch (err) {
+        reject(err);
+      }
       this.buildPatterns();
       if (this.hasDest()) {
         fs.copySync(this.src, this.options.dest);
@@ -80,22 +84,10 @@ export default class I18nPatch {
   readConfigFile(name) {
     let configPath = path.join(this.options.config, `${name}.yml`);
     if (pathExists.sync(configPath)) {
-      try {
-        return yaml.load(fs.readFileSync(configPath, ENCODING));
-      } catch (err) {
-        console.log(`Cannot read ${configPath}`);
-        console.log(err.stack);
-        process.exit(1);
-      }
+      return yaml.load(fs.readFileSync(configPath, ENCODING));
     } else {
       configPath = path.join(this.options.config, `${name}.json`);
-      try {
-        return JSON.parse(fs.readFileSync(configPath));
-      } catch (err) {
-        console.log(`Cannot read ${configPath}`);
-        console.log(err.stack);
-        process.exit(1);
-      }
+      return JSON.parse(fs.readFileSync(configPath));
     }
   }
 
