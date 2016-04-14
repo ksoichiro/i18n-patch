@@ -1,0 +1,22 @@
+translations:
+- src: 'test.js'
+  named-patterns:
+  - name: singleWord
+    pattern: "{word}?$|(\"){word}?\"|('){word}?'|(\".* ){word}?(\")"
+    replace: '$1$2$3${{key}}$1$2$4'
+    params: ['word', 'key']
+  - name: doSth
+    pattern: '(^\s+|"){verb} ([^"]*)("|$)'
+    replace: '$1${{key}}$3'
+    args:
+    - '$2'
+    params: ['verb', 'key']
+  patterns:
+  - name: singleWord
+    params:
+    - {word: Issues, key: issue}
+    - {word: Applications, key: applications}
+    - {word: Labels, key: label}
+  - name: doSth
+    params:
+    - {verb: Edit, key: editSth}
