@@ -1,7 +1,7 @@
 'use strict';
 
 import test from 'ava';
-import I18nPatch from '../lib';
+import I18nPatch from '../src';
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
