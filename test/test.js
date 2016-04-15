@@ -143,3 +143,17 @@ test('exception is thrown when config not found', t => {
     t.ok(err);
   });
 });
+
+test('exception is thrown when locale is not specified', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let opts = {
+    config: '../example',
+    dest: tempDir
+  };
+  t.plan(1);
+  return new I18nPatch('../example/src', opts)
+  .generate()
+  .catch((err) => {
+    t.ok(err);
+  });
+});
