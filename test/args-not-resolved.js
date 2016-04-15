@@ -13,11 +13,11 @@ test.before(() => {
 test('args', t => {
   let tempDir = temp.mkdirSync('out');
   let opts = {
-    config: './fixtures/args',
+    config: './fixtures/args-not-resolved',
     locale: 'ja',
     dest: tempDir
   };
-  return new I18nPatch('./fixtures/args', opts)
+  return new I18nPatch('./fixtures/args-not-resolved', opts)
   .generate()
   .catch((err) => {
     console.log(err.stack);
@@ -27,9 +27,7 @@ test('args', t => {
     t.is(
       fs.readFileSync(path.join(tempDir, 'test.js'), 'utf8'),
       `/*
-  "本当に\\"#{group}\\"を離脱しますか？"
-  "本当に\\"#{project}\\"プロジェクトを削除しますか？"
-  "本当に削除しますか？"
+  "本当に$\{leaveSth\}しますか？"
 */
 `);
   });

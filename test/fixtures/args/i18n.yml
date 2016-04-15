@@ -7,3 +7,11 @@ translations:
     - replace: '${leaveSth}'
       args:
       - '\"#{group}\"'
+  - pattern: !!js/regexp /"Are you sure you want to delete (\\"#{project}\\") project\?"/
+    replace: '"${areYouSureYouDeleteProject}"'
+    args:
+    - '$1'
+  - pattern: !!js/regexp /"Are you sure you want to delete\?"/
+    replace: '"${areYouSureYouDoSomething}"'
+    args:
+    - '${delete}'

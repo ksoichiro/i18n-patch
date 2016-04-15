@@ -1,0 +1,9 @@
+translations:
+- src: 'test.js'
+  patterns:
+  - pattern: '"Are you sure you want to leave \"#{group}\" group?"'
+    replace: '"${areYouSureYouDoSomething}"'
+    args:
+    - replace: '${leaveSth}'
+      args:
+      - '\"#{group}\"'
