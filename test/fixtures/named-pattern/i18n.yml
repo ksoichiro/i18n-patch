@@ -25,7 +25,8 @@ translations:
     - {word: Applications, key: applications}
     - {word: Labels, key: label}
   - name: doSth
-    params:
-    - {verb: Edit, key: editSth}
+    params: {verb: Edit, key: editSth}
   - name: sthWasSuccessfullyDone
-    params: {obj: Issue, objKey: issue, done: created, doneKey: create}
+    params:
+    - {obj: Issue, objKey: issue, done: created, doneKey: create}
+    - {obj: Project, objKey: project, done: updated, doneKey: update}

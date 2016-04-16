@@ -2,5 +2,7 @@ applications: アプリケーション
 editSth: '{0}を編集'
 issue: 課題
 label: ラベル
+project: プロジェクト
 sthWasSuccessfullyDone: '{0}が{1}されました'
 create: 作成
+update: 更新

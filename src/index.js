@@ -10,6 +10,7 @@ const yaml = require('js-yaml');
 const temp = require('temp').track();
 const pathExists = require('path-exists');
 const camelCase = require('camelcase');
+const clone = require('clone');
 
 const NEWLINE = '\n';
 const ENCODING = 'utf8';
@@ -126,7 +127,7 @@ export default class I18nPatch {
               for (let params of paramsSet) {
                 let npPattern = namedPattern.pattern;
                 let npReplace = namedPattern.replace;
-                let npArgs = namedPattern.args;
+                let npArgs = clone(namedPattern.args);
                 for (let npp of namedPattern.params) {
                   if (params.hasOwnProperty(npp)) {
                     npPattern = npPattern.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
