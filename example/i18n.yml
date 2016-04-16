@@ -17,9 +17,9 @@ translations:
       value: codeBar2
 - src: '**/*.rb'
   conditionals:
-    - insert:
-        at: begin
-        value: encodingHeader
+  - insert:
+      at: begin
+      value: encodingHeader
   patterns:
   - pattern: "redirect_to foo_path, notice: 'Successfully created.'"
     replace: "redirect_to foo_path, notice: '${fooSuccessfullyCreated}'"

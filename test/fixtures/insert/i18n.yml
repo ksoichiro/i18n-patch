@@ -1,20 +1,20 @@
 translations:
 - src: 'test.js'
   conditionals:
-    - insert:
-        at: end
-        value: snippet
+  - insert:
+      at: end
+      value: snippet
   patterns:
   - pattern: foo
     replace: '${foo}'
 - src: 'test2.js'
   conditionals:
-    - insert:
-        at: begin
-        value: snippet
-    - insert:
-        at: end
-        value: snippet
+  - insert:
+      at: begin
+      value: snippet
+  - insert:
+      at: end
+      value: snippet
   patterns:
   - pattern: foo
     replace: '${foo}'
