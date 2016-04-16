@@ -126,17 +126,27 @@ export default class I18nPatch {
               for (let params of paramsSet) {
                 let npPattern = namedPattern.pattern;
                 let npReplace = namedPattern.replace;
+                let npArgs = namedPattern.args;
                 for (let npp of namedPattern.params) {
                   if (params.hasOwnProperty(npp)) {
                     npPattern = npPattern.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
                     npReplace = npReplace.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
+                    if (npArgs) {
+                      for (let a of npArgs) {
+                        if (a.replace && typeof a.replace !== 'function' && a.replace.replace) {
+                          a.replace = a.replace.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
+                        } else if (a) {
+                          a = a.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
+                        }
+                      }
+                    }
                   }
                 }
                 let newPattern = {};
                 newPattern.pattern = new RegExp(npPattern);
                 newPattern.replace = npReplace;
                 if (namedPattern.args) {
-                  newPattern.args = namedPattern.args;
+                  newPattern.args = npArgs;
                 }
                 patterns.push(newPattern);
                 added = true;

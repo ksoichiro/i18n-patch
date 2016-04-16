@@ -11,6 +11,13 @@ translations:
     args:
     - '$2'
     params: ['verb', 'key']
+  - name: sthWasSuccessfullyDone
+    pattern: "{obj} was successfully {done}."
+    replace: "${sthWasSuccessfullyDone}"
+    args:
+    - replace: '${{objKey}}'
+    - replace: '${{doneKey}}'
+    params: ['obj', 'objKey', 'done', 'doneKey']
   patterns:
   - name: singleWord
     params:
@@ -20,3 +27,5 @@ translations:
   - name: doSth
     params:
     - {verb: Edit, key: editSth}
+  - name: sthWasSuccessfullyDone
+    params: {obj: Issue, objKey: issue, done: created, doneKey: create}
