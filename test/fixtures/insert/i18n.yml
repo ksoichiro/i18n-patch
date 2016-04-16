@@ -20,3 +20,11 @@ translations:
     replace: '${foo}'
   - pattern: baz
     replace: '${baz}'
+
+# conditionals without insert
+- src: 'test.js'
+  conditionals:
+  - whatever: bar
+  patterns:
+  - pattern: foo
+    replace: '${foo}'

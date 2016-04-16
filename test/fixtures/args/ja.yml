@@ -2,3 +2,5 @@ areYouSureYouDoSomething: 本当に{0}しますか？
 areYouSureYouDeleteProject: 本当に{0}プロジェクトを削除しますか？
 leaveSth: '{0}を離脱'
 delete: 削除
+deleteSth: '{0}を削除'
+issueNamed: 課題{0}

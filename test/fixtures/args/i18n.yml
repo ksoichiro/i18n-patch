@@ -15,3 +15,11 @@ translations:
     replace: '"${areYouSureYouDoSomething}"'
     args:
     - '${delete}'
+  - pattern: !!js/regexp /"Are you sure you want to delete (\\"#{issue}\\") issue\?"/
+    replace: '"${areYouSureYouDoSomething}"'
+    args:
+    - replace: '${deleteSth}'
+      args:
+      - replace: '${issueNamed}'
+        args:
+        - '$1'

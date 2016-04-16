@@ -10,14 +10,14 @@ test.before(() => {
   temp.track();
 });
 
-test('args', t => {
+test('insert is defined after normal patterns', t => {
   let tempDir = temp.mkdirSync('out');
   let opts = {
-    config: './fixtures/args',
+    config: './fixtures/insert2',
     locale: 'ja',
     dest: tempDir
   };
-  return new I18nPatch('./fixtures/args', opts)
+  return new I18nPatch('./fixtures/insert2', opts)
   .generate()
   .catch((err) => {
     console.log(err.stack);
@@ -27,11 +27,9 @@ test('args', t => {
     t.is(
       fs.readFileSync(path.join(tempDir, 'test.js'), 'utf8'),
       `/*
-  "本当に\\"#{group}\\"を離脱しますか？"
-  "本当に\\"#{project}\\"プロジェクトを削除しますか？"
-  "本当に削除しますか？"
-  "本当に課題\\"#{issue}\\"を削除しますか？"
+  bar
 */
+// qux
 `);
   });
 });
