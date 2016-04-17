@@ -168,9 +168,130 @@ The following `test.js` will not be changed because it does not match to `transl
 // preview.text "Nothing to preview."
 ```
 
+### Arguments
+
+`replace` elements can have arguments.
+If you want to aggregate similar patterns, consider using arguments.
+
+For example, you can configure translations for `Edit issue` and `Edit project` like this:
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: 'Edit issue'
+    replace: '${editIssue}'
+  - pattern: 'Edit project'
+    replace: '${editProject}'
+
+# ja.yml
+editIssue: 課題を編集
+editProject: プロジェクトを編集
+```
+
+But you can also write them using arguments:
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: 'Edit issue'
+    replace: '${editSomething}'
+    args:
+    - 'issue'
+  - pattern: 'Edit project'
+    replace: '${editSomething}'
+    args:
+    - 'project'
+  - pattern: 'issue'
+    replace: '${issue}'
+  - pattern: 'project'
+    replace: '${project}'
+
+# en.yml
+editSomething: {0}を編集
+issue: 課題
+project: プロジェクト
+```
+
+This will be processed like this:
+
+1. When the expression `Edit issue` is found,
+   it's replaced into `${editSomething}`.
+1. `${NAME}` in the `replace` value is treated as a variable,
+   and in this case, `editSomething` is resolved to
+   `{0}を編集` using `ja.yml`.
+1. `{N}` in the translation key is an argument
+   and the values of `args` are passed to it.
+1. As a result, `{0}を編集` will be converted to `issueを編集`.
+1. Then the third pattern is applied; `issue` is translated to `課題` and the result will be `課題を編集`.
+
+This is useful to write less translations and standardize the expressions.
+
 ### Sequence
 
-### Arguments for replace
+Patterns are processed sequentially, so if you want to apply multiple translations to one line, please check the orders of the patterns are correct.
+
+For example, if you want to translate `Edit issue` into `課題を編集` (Japanese), the following configurations won't work as expected.
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: 'issue'
+    replace: '${issue}'
+  - pattern: 'Edit issue'
+    replace: '${editSomething}'
+    args:
+    - 'issue'
+
+# ja.yml
+editSomething: '{0}を編集'
+issue: 課題
+```
+
+Because `Edit issue` is translated to `Edit 課題` by the first pattern, it won't match to the second expression.
+
+To fix this problem, you could write like this:
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: 'Edit issue'
+    replace: '${editSomething}'
+    args:
+    - 'issue'
+  - pattern: 'issue'
+    replace: '${issue}'
+
+# ja.yml
+editSomething: '{0}を編集'
+issue: 課題
+```
+
+Note: to tell you the truth, you can also solve this problem by using regular expressions (`!!js/regexp`):
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: 'issue'
+    replace: '${issue}'
+  - pattern: !!js/regexp /Edit (.*)/
+    replace: '${editSomething}'
+    args:
+    - '$1'
+
+# ja.yml
+editSomething: '{0}を編集'
+issue: 課題
+```
 
 ### Code insertion
 
