@@ -7,6 +7,13 @@
 [![npm](https://img.shields.io/npm/v/i18n-patch.svg?style=flat-square)](https://www.npmjs.com/package/i18n-patch)
 ![npm](https://img.shields.io/npm/l/i18n-patch.svg?style=flat-square)
 
+i18n-patch is a tool to translate source code into your language(locale) for any software that does not provide i18n mechanisms.
+
+This tool enables you to follow the upgrades of the target software:
+you write translation points using regular expressions, write translations for each points,
+and execute this tool.
+This method is better than modifying target source code directly.
+
 ## Install
 
 ```console
@@ -31,7 +38,16 @@ $ npm install -g i18n-patch
 
 ## Example
 
-example/i18n.yml:
+You need 2 configuration files: `i18n.yml` and `<locale>.yml` like `ja.yml` for Japanese.
+
+`i18n.yml` contains translation points that defines "what should be translated".
+
+The tool reads the target source code and when the patterns in `i18n.yml` are found,
+it will convert "keys" in translation points and replace them to translations that are provied by `<locale>.yml`.
+
+Let's see a simple example below.
+
+The following `example/i18n.yml` defines target source files and patterns to be translated.
 
 ```yaml
 translations:
@@ -43,14 +59,16 @@ translations:
     replace: preview.text("${loading}");
 ```
 
-example/ja.yml:
+`example/ja.yml` provides translations for Japanese.  
+You can see the keys (nothingToPreview, loading) in this file
+are used in `i18n.yml`.
 
 ```yaml
 nothingToPreview: プレビューする内容がありません
 loading: 読み込み中...
 ```
 
-example/src/js/sample.js:
+And the target file `example/src/js/sample.js` is like this:
 
 ```javascript
 preview.text("Nothing to preview.");
@@ -58,15 +76,18 @@ preview.text("Loading...");
 console.log('other codes should be untouched.');
 ```
 
-After executing `i18n-patch ja src out` in `example` dir...
-
-example/out/js/sample.js:
+Then, by executing `i18n-patch ja src out` in `example` directory,  
+`example/out/js/sample.js` will be generated:
 
 ```javascript
 preview.text("プレビューする内容がありません");
 preview.text("読み込み中...");
 console.log('other codes should be untouched.');
 ```
+
+This is a very simple example, but this tool can handle more complex expressions.  
+
+Please check "Configuration details" section for further details.
 
 If you want to try it by yourself, clone this repository and execute:
 
@@ -77,13 +98,9 @@ $ npm start
 
 Then you can confirm the result in `example/out` directory.
 
-## Configuration
-
-This project is still frequently updated, so please refer the source code or ask me as an [issue](https://github.com/ksoichiro/i18n-patch/issues) if you need.
-
 ## Why?
 
-The main purpose of this project is to provide an external i18n system for any existent source codes.
+The main purpose of this project is to provide an external i18n system for any existent source code.
 
 I'm maintaining [gitlab-i18n-patch](https://github.com/ksoichiro/gitlab-i18n-patch) project
 to provide unofficial Japanese translation patch to GitLab.
@@ -103,6 +120,63 @@ This method has many problems:
 
 Therefore, I thought it's better to create a new external translation system
 for providing i18n patch GitLab project without Git branch management.
+
+## Configuration details
+
+### Basic
+
+The main configuration file is `i18n.yml` and looks like this:
+
+```yaml
+translations:
+- src: '**/*.coffee'
+  patterns:
+  - pattern: preview.text "Nothing to preview."
+    replace: preview.text "${nothingToPreview}"
+```
+
+`translations.src` will be expanded using node-glob.
+
+`translations.patterns` is an array that includes elements which define target pattern and replacement for it.
+Each element of `patterns` that have `pattern` and `replace` will be used to replace source code.
+
+`pattern` is usually just a string value, but you can use regular expressions by js-yaml feature: `!!js/regexp /foo/`.
+
+`replace` defines the replacement for the `pattern`, and this can contain variable expression like `${nothingToPreview}`.
+
+Your locale file (like `ja.yml`) should map this key to a translation.
+
+```yaml
+nothingToPreview: プレビューする内容がありません
+```
+
+With these configurations, the following code named `test.coffee`
+
+```coffee
+preview.text "Nothing to preview."
+```
+
+will be converted to this:
+
+```coffee
+preview.text "プレビューする内容がありません"
+```
+
+The following `test.js` will not be changed because it does not match to `translation.src`.
+
+```javascript
+// preview.text "Nothing to preview."
+```
+
+### Sequence
+
+### Arguments for replace
+
+### Code insertion
+
+### Conditional insertion for all files
+
+### Named patterns
 
 ## License
 
