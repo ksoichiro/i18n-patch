@@ -142,7 +142,9 @@ translations:
     replace: preview.text "${nothingToPreview}"
 ```
 
-`translations.src` will be expanded using node-glob.
+`translations.src` will be expanded using node-glob.  
+For example, `src/a.coffee` and `src/b/c.coffee` will match this pattern,
+but `src/d.js` will not match.
 
 `translations.patterns` is an array that includes elements which define target pattern and replacement for it.
 Each element of `patterns` that have `pattern` and `replace` will be used to replace source code.
@@ -281,24 +283,24 @@ editSomething: '{0}を編集'
 issue: 課題
 ```
 
-Note: to tell you the truth, you can also solve this problem by using regular expressions (`!!js/regexp`):
-
-```yaml
-# i18n.yml
-translations:
-- src: '**/*'
-  patterns:
-  - pattern: 'issue'
-    replace: '${issue}'
-  - pattern: !!js/regexp /Edit (.*)/
-    replace: '${editSomething}'
-    args:
-    - '$1'
-
-# ja.yml
-editSomething: '{0}を編集'
-issue: 課題
-```
+> Note: to tell you the truth, you can also solve this problem by using regular expressions (`!!js/regexp`):
+> 
+> ```yaml
+> # i18n.yml
+> translations:
+> - src: '**/*'
+>   patterns:
+>   - pattern: 'issue'
+>     replace: '${issue}'
+>   - pattern: !!js/regexp /Edit (.*)/
+>     replace: '${editSomething}'
+>     args:
+>     - '$1'
+>
+> # ja.yml
+> editSomething: '{0}を編集'
+> issue: 課題
+> ```
 
 ### Code insertion
 
@@ -307,7 +309,7 @@ you can use `insert`.
 
 For example, with the following config files
 
-```
+```yaml
 # i18n.yml
 - src: 'foo.js'
   patterns:
@@ -363,7 +365,9 @@ baz: qux
 ```
 
 In `i18n.yml`, you define what you want to insert when the files match some of the patterns.
+
 `conditionals` is an array, and can have children that have `insert` element.
+
 `insert` should have `at` and `value` children.
 If you'd like to insert codes at the beginning of the file, set `begin` to `insert.at`, and set `end` if you want to insert them at the end of the file.
 
@@ -377,7 +381,7 @@ console.log('bar');
 
 b.js:
 
-```
+```javascript
 console.log('hello');
 ```
 
@@ -470,7 +474,7 @@ update: 更新
 delete: 削除
 ```
 
-`ja.yml` is much improved, it doesn't contain any duplicate translations.  
+`ja.yml` is much improved - it doesn't contain any duplicate translations.  
 But as you can see, `i18n.yml` is much longer than before.
 
 You can use `named-patterns` to improve this.
