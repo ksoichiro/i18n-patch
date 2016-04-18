@@ -87,7 +87,7 @@ console.log('other codes should be untouched.');
 
 This is a very simple example, but this tool can handle more complex expressions.  
 
-Please check "Configuration details" section for further details.
+Please check the [Configuration details](#configuration-details) section for further details.
 
 If you want to try it by yourself, clone this repository and execute:
 
@@ -122,6 +122,13 @@ Therefore, I thought it's better to create a new external translation system
 for providing i18n patch GitLab project without Git branch management.
 
 ## Configuration details
+
+* [Basic](#basic)
+* [Arguments](#arguments)
+* [Sequence](#sequence)
+* [Code insertion](#code-insertion)
+* [Conditional insertion for all matching files](#conditional-insertion-for-all-matching-files)
+* [Named patterns](#named-patterns)
 
 ### Basic
 
@@ -295,9 +302,235 @@ issue: 課題
 
 ### Code insertion
 
-### Conditional insertion for all files
+If you want to insert some code snippet into some files,
+you can use `insert`.
+
+For example, with the following config files
+
+```
+# i18n.yml
+- src: 'foo.js'
+  patterns:
+  - insert:
+      at: end
+      value: bar
+
+# ja.yml
+bar: |
+     // baz
+     // qux
+```
+
+the next source file will be like this:
+
+```javascript
+console.log('Hello, world');
+```
+
+```javascript
+console.log('Hello, world');
+// baz
+// qux
+```
+
+If you want to insert code at the beginning of the file,
+you should change the value of `insert.at` from `end` to `begin`.
+
+As you can see, `insert.value` is treated as a translation key,
+so you must define the value of `insert.value`
+to your `<locale>.yml`.
+
+### Conditional insertion for all matching files
+
+If you want to insert some code snippet into some files
+**only when they match some of the patterns**,
+then you can use `conditionals` and `insert`.
+
+```yaml
+# i18n.yml
+- src: '**/*.rb'
+  conditionals:
+  - insert:
+      at: begin
+      value: foo
+  patterns:
+  - pattern: bar
+    replace: baz
+
+# ja.yml
+foo: '// This file is edited by i18n-patch'
+baz: qux
+```
+
+In `i18n.yml`, you define what you want to insert when the files match some of the patterns.
+`conditionals` is an array, and can have children that have `insert` element.
+`insert` should have `at` and `value` children.
+If you'd like to insert codes at the beginning of the file, set `begin` to `insert.at`, and set `end` if you want to insert them at the end of the file.
+
+Suppose you have files like below,
+
+a.js:
+
+```javascript
+console.log('bar');
+```
+
+b.js:
+
+```
+console.log('hello');
+```
+
+then `a.js` matches `bar`, and `foo` will be inserted at the beginning of the file, and won't be inserted to `b.js`.
+
+```javascript
+// This file is edited by i18n-patch
+console.log('qux');
+```
 
 ### Named patterns
+
+Even if you use arguments and regular expressions,  
+there would be still many duplicate configurations.  
+With named patterns, you can aggregate these configurations.
+
+Let's see a more complex example.
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: "notice: 'Project was successfully created.'"
+    replace: "notice: '${projectWasSuccessfullyCreated}'"
+  - pattern: "notice: 'Project was successfully updated.'"
+    replace: "notice: '${projectWasSuccessfullyUpdated}'"
+  - pattern: "notice: 'Project was successfully deleted.'"
+    replace: "notice: '${projectWasSuccessfullyDeleted}'"
+  - pattern: "notice: 'Group was successfully created.'"
+    replace: "notice: '${groupWasSuccessfullyCreated}'"
+  - pattern: "notice: 'Group was successfully updated.'"
+    replace: "notice: '${groupWasSuccessfullyUpdated}'"
+  - pattern: "notice: 'Group was successfully deleted.'"
+    replace: "notice: '${groupWasSuccessfullyDeleted}'"
+
+# ja.yml
+projectWasSuccessfullyCreated: 'プロジェクトが作成されました'
+projectWasSuccessfullyUpdated: 'プロジェクトが更新されました'
+projectWasSuccessfullyDeleted: 'プロジェクトが削除されました'
+groupWasSuccessfullyCreated: 'グループが作成されました'
+groupWasSuccessfullyUpdated: 'グループが更新されました'
+groupWasSuccessfullyDeleted: 'グループが削除されました'
+```
+
+The above configurations have similar translations, so you could rewrite them using arguments like this:
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: "notice: 'Project was successfully created.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${project}'
+    - '${create}'
+  - pattern: "notice: 'Project was successfully updated.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${project}'
+    - '${update}'
+  - pattern: "notice: 'Project was successfully deleted.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${project}'
+    - '${delete}'
+  - pattern: "notice: 'Group was successfully created.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${group}'
+    - '${create}'
+  - pattern: "notice: 'Group was successfully updated.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${group}'
+    - '${update}'
+  - pattern: "notice: 'Group was successfully deleted.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${group}'
+    - '${delete}'
+
+# ja.yml
+somethingWasSuccessfullyDone: '{0}が{1}されました'
+project: プロジェクト
+group: グループ
+create: 作成
+update: 更新
+delete: 削除
+```
+
+`ja.yml` is much improved, it doesn't contain any duplicate translations.  
+But as you can see, `i18n.yml` is much longer than before.
+
+You can use `named-patterns` to improve this.
+
+The `named-patterns` pre-define `pattern`, `replace` and `args`
+like "function" and you can call it with `name` with `params`:
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  named-patterns:
+  - name: somethingWasSuccessfullyDone
+    pattern: "notice: '{obj} was successfully {done}\\.'"
+    replace: "notice: '${sthWasSuccessfullyDone}'"
+    args:
+    - '${{objKey}}'
+    - '${{doneKey}}'
+    params: ['obj', 'objKey', 'done', 'doneKey']
+```
+
+> Note: `pattern` in `named-patterns` are treated as regular expressions even if you don't write `!!js/regexp`.
+
+The above configuration defines a pattern named `somethingWasSuccessfullyDone`.  
+`{obj}`, `{done}`, `{objKey}` and `{doneKey}` are parameters,
+and you can replace it to create a new concrete pattern.
+
+In `patterns` section, you can write `name` to use this pattern instead of writing complex `pattern`, `replace` and `args`.  
+You must also set `{obj}`, `{done}`, `{objKey}` and `{doneKey}` with `params` element.
+
+```yaml
+  patterns:
+  - name: somethingWasSuccessfullyDone
+    params:
+    - {obj: Project, objKey: project, done: created, doneKey: create}
+    - {obj: Project, objKey: project, done: updated, doneKey: update}
+    - {obj: Project, objKey: project, done: deleted, doneKey: delete}
+    - {obj: Project, objKey: project, done: created, doneKey: create}
+    - {obj: Project, objKey: project, done: created, doneKey: create}
+```
+
+In the example above, this
+
+```yaml
+  patterns:
+  - name: somethingWasSuccessfullyDone
+    params:
+    - {obj: Project, objKey: project, done: created, doneKey: create}
+```
+
+is equivalent to this:
+
+```yaml
+  patterns:
+  - pattern: "notice: 'Project was successfully created.'"
+    replace: "notice: '${somethingWasSuccessfullyDone}'"
+    args:
+    - '${project}'
+    - '${create}'
+```
 
 ## License
 
