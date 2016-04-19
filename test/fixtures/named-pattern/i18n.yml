@@ -2,8 +2,10 @@ translations:
 - src: 'test.js'
   named-patterns:
   - name: singleWord
-    pattern: "{word}?$|(\"){word}?\"|('){word}?'|(\".* ){word}?(\")"
-    replace: '$1$2$3${{key}}$1$2$4'
+    pattern: "{word}?$|(\"){word}?\"|('){word}?'|(\".* ){word}?(\")|( +){word}$"
+    exclude: "- if "
+    flags: 'gi'
+    replace: '$1$2$3$5${{key}}$1$2$4'
     params: ['word', 'key']
   - name: doSth
     pattern: '(^\s+|"){verb} ([^"]*)("|$)'

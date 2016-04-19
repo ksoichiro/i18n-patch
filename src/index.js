@@ -126,12 +126,16 @@ export default class I18nPatch {
               }
               for (let params of paramsSet) {
                 let npPattern = namedPattern.pattern;
+                let npExclude = namedPattern.exclude;
                 let npReplace = namedPattern.replace;
                 let npArgs = clone(namedPattern.args);
-                let npFlags = namedPattern.flags || 'g';
+                let npFlags = 'g';
                 for (let npp of namedPattern.params) {
                   if (params.hasOwnProperty(npp)) {
                     npPattern = npPattern.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
+                    if (npExclude) {
+                      npExclude = npExclude.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
+                    }
                     npReplace = npReplace.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
                     if (npArgs) {
                       for (let a of npArgs) {
@@ -146,7 +150,13 @@ export default class I18nPatch {
                 }
                 let newPattern = {};
                 newPattern.pattern = new RegExp(npPattern);
+                if (namedPattern.exclude) {
+                  newPattern.exclude = new RegExp(npExclude);
+                }
                 newPattern.replace = npReplace;
+                if (namedPattern.flags) {
+                  newPattern.flags = namedPattern.flags;
+                }
                 if (namedPattern.args) {
                   newPattern.args = npArgs;
                 }
@@ -271,7 +281,7 @@ export default class I18nPatch {
             continue;
           }
           let before = result;
-          result = this.applyToResolved(result, p, p.pattern);
+          result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
           if (p.insert && p.insert.resolved) {
             if (p.insert.at === INSERT_AT_BEGIN) {
               if (beginBuffer.indexOf(p.insert.resolved) < 0) {
@@ -372,7 +382,7 @@ export default class I18nPatch {
     }
   }
 
-  applyToResolved(target, obj, pattern) {
+  applyToResolved(target, obj, pattern, exclude, flags) {
     let resolved = obj.resolved;
     if (obj.args) {
       for (let i = 0; i < obj.args.length; i++) {
@@ -392,7 +402,12 @@ export default class I18nPatch {
         }
       }
     }
-    return target.replace(pattern, resolved);
+    let exp = flags ? new RegExp(pattern, flags) : pattern;
+    let result = target.replace(exp, resolved);
+    if (exclude && result !== target && target.match(exclude)) {
+      return target;
+    }
+    return result;
   }
 
   applyToArgResolved(target, obj, pattern) {

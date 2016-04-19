@@ -33,6 +33,7 @@ test('named-pattern', t => {
   title: 'ラベル'
   課題が作成されました
   プロジェクトが更新されました
+  - if issues
 */
 `);
   });
