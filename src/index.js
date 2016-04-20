@@ -151,7 +151,11 @@ export default class I18nPatch {
                 let newPattern = {};
                 newPattern.pattern = new RegExp(npPattern);
                 if (namedPattern.exclude) {
-                  newPattern.exclude = new RegExp(npExclude);
+                  if (namedPattern.flags) {
+                    newPattern.exclude = new RegExp(npExclude, namedPattern.flags);
+                  } else {
+                    newPattern.exclude = new RegExp(npExclude);
+                  }
                 }
                 newPattern.replace = npReplace;
                 if (namedPattern.flags) {
