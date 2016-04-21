@@ -239,6 +239,42 @@ This will be processed like this:
 
 This is useful to write less translations and standardize the expressions.
 
+### Exclusion
+
+If you want to exclude some patterns, even when the line matches to a pattern, you can use `exclude` to skip it.
+
+```yaml
+# i18n.yml
+translations:
+- src: '**/*'
+  patterns:
+  - pattern: ' user$'
+    replace: ' ${user}'
+    exclude: '- if'
+  - pattern: !!js/regexp /Edit (.*)/
+    replace: '${editSomething}'
+    args:
+    - '$1'
+
+# ja.yml
+user: ユーザ
+editSomething: '{0}を編集'å
+```
+
+If the above configuration is given, then
+
+```
+- if user
+    Edit user
+```
+
+will be translated into:
+
+```
+- if user
+    ユーザを編集
+```
+
 ### Sequence
 
 Patterns are processed sequentially, so if you want to apply multiple translations to one line, please check the orders of the patterns are correct.
