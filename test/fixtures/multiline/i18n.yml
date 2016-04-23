@@ -1,0 +1,7 @@
+translations:
+- src: 'test.js'
+  patterns:
+  - pattern: 'Applications'
+    replace: '${applications}'
+  - pattern: !!js/regexp /^(.*)History for\n([^\n]*)$/m
+    replace: '${historyFor}'

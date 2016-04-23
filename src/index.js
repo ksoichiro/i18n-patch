@@ -354,6 +354,8 @@ class Translator extends Transform {
     this.buffer = [];
     this.beginBuffer = [];
     this.endBuffer = [];
+    this.pendingPatterns = [];
+    this.inputEnd = false;
   }
 
   _transform(chunk, encoding, done) {
@@ -375,6 +377,7 @@ class Translator extends Transform {
     if (this.lastLineData) {
       this.buffer.push(this.lastLineData);
     }
+    this.inputEnd = true;
     this.process();
     this.lastLineData = null;
     this.buffer = null;
@@ -383,19 +386,58 @@ class Translator extends Transform {
 
   process() {
     while (this.buffer.length) {
-      let result = this.processLine(this.t, this.buffer.shift());
-      // TODO Preserve original newline if possible
-      this.push(result + NEWLINE);
+      if (!this.processLine(this.t, this.buffer.shift())) {
+        // Need to wait next data
+        break;
+      }
     }
   }
 
   processLine(t, line) {
     let result = line;
-    for (let p of t.patterns) {
+    // If pendingPatterns are not empty,
+    // it means that the first pattern need more lines.
+    if (0 === this.pendingPatterns.length) {
+      t.patterns.forEach((p) => {
+        this.pendingPatterns.push(p);
+      });
+    }
+    while (this.pendingPatterns.length) {
+      let p = this.pendingPatterns.shift();
       if (!p.resolved) {
         continue;
       }
       let before = result;
+      let beforeMultiline = before;
+      let patternSource = p.pattern instanceof RegExp ? p.pattern.source : p.pattern;
+      let patternLines = patternSource
+        // Usually the pattern includes ([^\n]*) to express a line
+        // in multiline expression, so this should be removed
+        // to know how many lines this pattern requires.
+        .replace('[^\\n]', '')
+        .split('\\n').length;
+      let consumedBuffers = 0;
+      if (1 < patternLines) {
+        let currentLines = result.split(NEWLINE).length;
+        if (patternLines - currentLines <= this.buffer.length) {
+          for (let i = 0; i < patternLines - currentLines; i++) {
+            result += NEWLINE + this.buffer[i];
+            beforeMultiline = result;
+            consumedBuffers++;
+          }
+        } else if (this.inputEnd) {
+          // We should give up this pattern to be matched
+          // because there's no more data to read.
+          continue;
+        } else {
+          // If the input is not ended,
+          // put the current pattern and result back to the buffer
+          // and wait next data to be arrived.
+          this.pendingPatterns.unshift(p);
+          this.buffer.unshift(result);
+          return false;
+        }
+      }
       result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
       if (p.insert && p.insert.resolved) {
         if (p.insert.at === INSERT_AT_BEGIN) {
@@ -408,8 +450,19 @@ class Translator extends Transform {
           }
         }
       }
-      if (before === result) {
+      if (beforeMultiline === result) {
+        // result might include the next lines to look-ahead,
+        // but the next pattern should process the first line of the result.
+        // So result should be reverted to the value
+        // of the beginning of the current loop.
+        result = before;
         continue;
+      }
+      // We should consume looked-ahead buffers only when they match the pattern.
+      if (0 < consumedBuffers) {
+        for (let i = consumedBuffers; 0 < i; i--) {
+          this.buffer.shift();
+        }
       }
       this.matched = true;
       if (t.conditionals) {
@@ -429,7 +482,9 @@ class Translator extends Transform {
         }
       }
     }
-    return result;
+    // TODO Preserve original newline if possible
+    this.push(result + NEWLINE);
+    return true;
   }
 
   applyToResolved(target, obj, pattern, exclude, flags) {
