@@ -3,8 +3,8 @@
 import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
-import rl from 'readline';
 import 'babel-polyfill';
+import { Transform } from 'stream';
 const async = require('async');
 const yaml = require('js-yaml');
 const temp = require('temp').track();
@@ -26,8 +26,6 @@ export default class I18nPatch {
     this.options = options || {};
     this.options.dest = this.options.dest || this.src;
     this.options.config = this.options.config || 'config';
-    this.beginBuffer = [];
-    this.endBuffer = [];
   }
 
   generate(config, localeConfig) {
@@ -232,27 +230,25 @@ export default class I18nPatch {
   processFilePerLine(t, file) {
     return new Promise((resolve, reject) => {
       // Per-line processing
-      let matched = false;
       let error;
-      let lr = rl.createInterface({
-        input: fs.createReadStream(file)
-      });
+      let translator = new Translator(t);
+      fs.createReadStream(file).pipe(translator);
       let out = temp.createWriteStream()
       .on('error', (err) => {
         reject(err);
       })
       .on('close', () => {
         if (error) {
-          // This can be set in 'error' callback of lr
+          // This can be set in 'error' callback of translator
           return;
         }
-        if (matched) {
+        if (translator.matched) {
           // TODO Preserve original file stats
           fs.copySync(out.path, file);
 
-          if (1 <= this.beginBuffer.length) {
+          if (1 <= translator.beginBuffer.length) {
             let value = '';
-            for (let e of this.beginBuffer) {
+            for (let e of translator.beginBuffer) {
               value += e;
               if (!e.endsWith(NEWLINE)) {
                 value += NEWLINE;
@@ -261,9 +257,9 @@ export default class I18nPatch {
             let content = fs.readFileSync(file, ENCODING);
             fs.writeFileSync(file, value + content, ENCODING);
           }
-          if (1 <= this.endBuffer.length) {
+          if (1 <= translator.endBuffer.length) {
             let value = '';
-            for (let e of this.endBuffer) {
+            for (let e of translator.endBuffer) {
               value += e;
               if (!e.endsWith(NEWLINE)) {
                 value += NEWLINE;
@@ -278,67 +274,23 @@ export default class I18nPatch {
         }
         resolve(file);
       });
-      lr.on('line', (line) => {
-        let [m, result] = this.processLine(t, line);
-        if (m) {
-          matched = true;
+
+      translator.on('readable', () => {
+        let line;
+        while (null !== (line = translator.read())) {
+          // TODO Preserve original newline if possible
+          out.write(`${line}\n`);
         }
-        // TODO Preserve original newline if possible
-        out.write(`${result}\n`);
       })
       .on('error', (err) => {
         error = err;
         out.end();
         reject(err);
       })
-      .on('close', () => {
+      .on('end', () => {
         out.end();
       });
     });
-  }
-
-  processLine(t, line) {
-    let matched = false;
-    let result = line;
-    for (let p of t.patterns) {
-      if (!p.resolved) {
-        continue;
-      }
-      let before = result;
-      result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
-      if (p.insert && p.insert.resolved) {
-        if (p.insert.at === INSERT_AT_BEGIN) {
-          if (this.beginBuffer.indexOf(p.insert.resolved) < 0) {
-            this.beginBuffer.push(p.insert.resolved);
-          }
-        } else if (p.insert.at === INSERT_AT_END) {
-          if (this.endBuffer.indexOf(p.insert.resolved) < 0) {
-            this.endBuffer.push(p.insert.resolved);
-          }
-        }
-      }
-      if (before === result) {
-        continue;
-      }
-      matched = true;
-      if (t.conditionals) {
-        for (let c of t.conditionals) {
-          if (!c.insert || !c.insert.resolved) {
-            continue;
-          }
-          if (c.insert.at === INSERT_AT_BEGIN) {
-            if (this.beginBuffer.indexOf(c.insert.resolved) < 0) {
-              this.beginBuffer.push(c.insert.resolved);
-            }
-          } else if (c.insert.at === INSERT_AT_END) {
-            if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
-              this.endBuffer.push(c.insert.resolved);
-            }
-          }
-        }
-      }
-    }
-    return [matched, result];
   }
 
   processFilePerFile(t, file) {
@@ -395,6 +347,115 @@ export default class I18nPatch {
     }
   }
 
+  hasTranslationKey(key) {
+    return this.localeConfig.hasOwnProperty(key);
+  }
+
+  resolveTranslationKey(target) {
+    let resolved = false;
+    let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
+      if (this.hasTranslationKey(matched)) {
+        resolved = true;
+      }
+      return this.localeConfig[matched];
+    });
+    if (!resolved) {
+      result = undefined;
+    }
+    return result;
+  }
+}
+
+class Translator extends Transform {
+  constructor(translation) {
+    super({ objectMode: true });
+    this.t = translation;
+    this.matched = false;
+    this.beginBuffer = [];
+    this.endBuffer = [];
+  }
+
+  _transform(chunk, encoding, done) {
+    var data = chunk.toString();
+    if (this.lastLineData) {
+      data = this.lastLineData + data;
+    }
+
+    var lines = data.split(NEWLINE);
+    this.lastLineData = lines.splice(lines.length - 1, 1)[0];
+    if (!this.buffer) {
+      this.buffer = [];
+    }
+    lines.forEach(function(line) {
+      this.buffer.push(line);
+    }.bind(this));
+    this.process();
+    done();
+  }
+
+  _flush(done) {
+    if (this.lastLineData) {
+      this.buffer.push(this.lastLineData);
+    }
+    this.process();
+    if (0 < this.buffer.length) {
+      this.buffer.forEach(this.push.bind(this));
+    }
+    this.lastLineData = null;
+    this.buffer = null;
+    done();
+  }
+
+  process() {
+    while (this.buffer.length) {
+      let result = this.processLine(this.t, this.buffer.shift());
+      this.push(result);
+    }
+  }
+
+  processLine(t, line) {
+    let result = line;
+    for (let p of t.patterns) {
+      if (!p.resolved) {
+        continue;
+      }
+      let before = result;
+      result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
+      if (p.insert && p.insert.resolved) {
+        if (p.insert.at === INSERT_AT_BEGIN) {
+          if (this.beginBuffer.indexOf(p.insert.resolved) < 0) {
+            this.beginBuffer.push(p.insert.resolved);
+          }
+        } else if (p.insert.at === INSERT_AT_END) {
+          if (this.endBuffer.indexOf(p.insert.resolved) < 0) {
+            this.endBuffer.push(p.insert.resolved);
+          }
+        }
+      }
+      if (before === result) {
+        continue;
+      }
+      this.matched = true;
+      if (t.conditionals) {
+        for (let c of t.conditionals) {
+          if (!c.insert || !c.insert.resolved) {
+            continue;
+          }
+          if (c.insert.at === INSERT_AT_BEGIN) {
+            if (this.beginBuffer.indexOf(c.insert.resolved) < 0) {
+              this.beginBuffer.push(c.insert.resolved);
+            }
+          } else if (c.insert.at === INSERT_AT_END) {
+            if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
+              this.endBuffer.push(c.insert.resolved);
+            }
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   applyToResolved(target, obj, pattern, exclude, flags) {
     let resolved = obj.resolved;
     if (obj.args) {
@@ -435,23 +496,5 @@ export default class I18nPatch {
       }
     }
     return target.replace(pattern, obj.resolved);
-  }
-
-  hasTranslationKey(key) {
-    return this.localeConfig.hasOwnProperty(key);
-  }
-
-  resolveTranslationKey(target) {
-    let resolved = false;
-    let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
-      if (this.hasTranslationKey(matched)) {
-        resolved = true;
-      }
-      return this.localeConfig[matched];
-    });
-    if (!resolved) {
-      result = undefined;
-    }
-    return result;
   }
 }
