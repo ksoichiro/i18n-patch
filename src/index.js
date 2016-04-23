@@ -230,18 +230,14 @@ export default class I18nPatch {
   processFilePerLine(t, file) {
     return new Promise((resolve, reject) => {
       // Per-line processing
-      let error;
       let translator = new Translator(t);
-      fs.createReadStream(file).pipe(translator);
-      let out = temp.createWriteStream()
-      .on('error', (err) => {
-        reject(err);
-      })
+      let out = temp.createWriteStream();
+      fs.createReadStream(file)
+      .pipe(translator)
+      .on('error', reject)
+      .pipe(out)
+      .on('error', reject)
       .on('close', () => {
-        if (error) {
-          // This can be set in 'error' callback of translator
-          return;
-        }
         if (translator.matched) {
           // TODO Preserve original file stats
           fs.copySync(out.path, file);
@@ -273,22 +269,6 @@ export default class I18nPatch {
           }
         }
         resolve(file);
-      });
-
-      translator.on('readable', () => {
-        let line;
-        while (null !== (line = translator.read())) {
-          // TODO Preserve original newline if possible
-          out.write(`${line}\n`);
-        }
-      })
-      .on('error', (err) => {
-        error = err;
-        out.end();
-        reject(err);
-      })
-      .on('end', () => {
-        out.end();
       });
     });
   }
@@ -398,9 +378,6 @@ class Translator extends Transform {
       this.buffer.push(this.lastLineData);
     }
     this.process();
-    if (0 < this.buffer.length) {
-      this.buffer.forEach(this.push.bind(this));
-    }
     this.lastLineData = null;
     this.buffer = null;
     done();
@@ -409,7 +386,8 @@ class Translator extends Transform {
   process() {
     while (this.buffer.length) {
       let result = this.processLine(this.t, this.buffer.shift());
-      this.push(result);
+      // TODO Preserve original newline if possible
+      this.push(result + NEWLINE);
     }
   }
 
