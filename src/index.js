@@ -351,6 +351,7 @@ class Translator extends Transform {
     super({ objectMode: true });
     this.t = translation;
     this.matched = false;
+    this.buffer = [];
     this.beginBuffer = [];
     this.endBuffer = [];
   }
@@ -363,9 +364,6 @@ class Translator extends Transform {
 
     var lines = data.split(NEWLINE);
     this.lastLineData = lines.splice(lines.length - 1, 1)[0];
-    if (!this.buffer) {
-      this.buffer = [];
-    }
     lines.forEach(function(line) {
       this.buffer.push(line);
     }.bind(this));
