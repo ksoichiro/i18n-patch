@@ -26,6 +26,8 @@ export default class I18nPatch {
     this.options = options || {};
     this.options.dest = this.options.dest || this.src;
     this.options.config = this.options.config || 'config';
+    this.beginBuffer = [];
+    this.endBuffer = [];
   }
 
   generate(config, localeConfig) {
@@ -231,8 +233,6 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       // Per-line processing
       let matched = false;
-      let beginBuffer = [];
-      let endBuffer = [];
       let error;
       let lr = rl.createInterface({
         input: fs.createReadStream(file)
@@ -250,9 +250,9 @@ export default class I18nPatch {
           // TODO Preserve original file stats
           fs.copySync(out.path, file);
 
-          if (1 <= beginBuffer.length) {
+          if (1 <= this.beginBuffer.length) {
             let value = '';
-            for (let e of beginBuffer) {
+            for (let e of this.beginBuffer) {
               value += e;
               if (!e.endsWith(NEWLINE)) {
                 value += NEWLINE;
@@ -261,9 +261,9 @@ export default class I18nPatch {
             let content = fs.readFileSync(file, ENCODING);
             fs.writeFileSync(file, value + content, ENCODING);
           }
-          if (1 <= endBuffer.length) {
+          if (1 <= this.endBuffer.length) {
             let value = '';
-            for (let e of endBuffer) {
+            for (let e of this.endBuffer) {
               value += e;
               if (!e.endsWith(NEWLINE)) {
                 value += NEWLINE;
@@ -279,44 +279,9 @@ export default class I18nPatch {
         resolve(file);
       });
       lr.on('line', (line) => {
-        let result = line;
-        for (let p of t.patterns) {
-          if (!p.resolved) {
-            continue;
-          }
-          let before = result;
-          result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
-          if (p.insert && p.insert.resolved) {
-            if (p.insert.at === INSERT_AT_BEGIN) {
-              if (beginBuffer.indexOf(p.insert.resolved) < 0) {
-                beginBuffer.push(p.insert.resolved);
-              }
-            } else if (p.insert.at === INSERT_AT_END) {
-              if (endBuffer.indexOf(p.insert.resolved) < 0) {
-                endBuffer.push(p.insert.resolved);
-              }
-            }
-          }
-          if (before === result) {
-            continue;
-          }
+        let [m, result] = this.processLine(t, line);
+        if (m) {
           matched = true;
-          if (t.conditionals) {
-            for (let c of t.conditionals) {
-              if (!c.insert || !c.insert.resolved) {
-                continue;
-              }
-              if (c.insert.at === INSERT_AT_BEGIN) {
-                if (beginBuffer.indexOf(c.insert.resolved) < 0) {
-                  beginBuffer.push(c.insert.resolved);
-                }
-              } else if (c.insert.at === INSERT_AT_END) {
-                if (endBuffer.indexOf(c.insert.resolved) < 0) {
-                  endBuffer.push(c.insert.resolved);
-                }
-              }
-            }
-          }
         }
         // TODO Preserve original newline if possible
         out.write(`${result}\n`);
@@ -330,6 +295,50 @@ export default class I18nPatch {
         out.end();
       });
     });
+  }
+
+  processLine(t, line) {
+    let matched = false;
+    let result = line;
+    for (let p of t.patterns) {
+      if (!p.resolved) {
+        continue;
+      }
+      let before = result;
+      result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
+      if (p.insert && p.insert.resolved) {
+        if (p.insert.at === INSERT_AT_BEGIN) {
+          if (this.beginBuffer.indexOf(p.insert.resolved) < 0) {
+            this.beginBuffer.push(p.insert.resolved);
+          }
+        } else if (p.insert.at === INSERT_AT_END) {
+          if (this.endBuffer.indexOf(p.insert.resolved) < 0) {
+            this.endBuffer.push(p.insert.resolved);
+          }
+        }
+      }
+      if (before === result) {
+        continue;
+      }
+      matched = true;
+      if (t.conditionals) {
+        for (let c of t.conditionals) {
+          if (!c.insert || !c.insert.resolved) {
+            continue;
+          }
+          if (c.insert.at === INSERT_AT_BEGIN) {
+            if (this.beginBuffer.indexOf(c.insert.resolved) < 0) {
+              this.beginBuffer.push(c.insert.resolved);
+            }
+          } else if (c.insert.at === INSERT_AT_END) {
+            if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
+              this.endBuffer.push(c.insert.resolved);
+            }
+          }
+        }
+      }
+    }
+    return [matched, result];
   }
 
   processFilePerFile(t, file) {
