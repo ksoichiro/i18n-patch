@@ -258,19 +258,19 @@ translations:
 
 # ja.yml
 user: ユーザ
-editSomething: '{0}を編集'å
+editSomething: '{0}を編集'
 ```
 
 If the above configuration is given, then
 
-```
+```haml
 - if user
     Edit user
 ```
 
 will be translated into:
 
-```
+```haml
 - if user
     ユーザを編集
 ```
