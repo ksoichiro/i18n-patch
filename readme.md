@@ -572,6 +572,51 @@ is equivalent to this:
     - '${create}'
 ```
 
+### Multiline
+
+If you want to use patterns that match two or more lines and change the order of the lines:
+
+```haml
+  %span.light History for
+  = link_to foobar
+```
+
+```haml
+  = link_to foobar
+  %span.light <translation of history for>
+```
+
+then you can write like this:
+
+```yaml
+translations:
+- src: 'test.js'
+  patterns:
+  - pattern: !!js/regexp /^(.*)History for\n([^\n]*)$/m
+    replace: '${historyFor}'
+```
+
+```yaml
+historyFor: "$2\n$1の更新履歴"
+```
+
+When `test.js` is like this,
+
+```haml
+  %span.light History for
+  = link_to foobar
+```
+
+then the result will be:
+
+```haml
+  = link_to foobar
+  %span.light の更新履歴
+```
+
+You must use `!!js/regexp` to pattern.  
+To match a line, you must use `([^\n]*)`, otherwise the tool cannot calculate the required lines.
+
 ## License
 
 MIT
