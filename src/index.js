@@ -189,6 +189,30 @@ export default class I18nPatch {
 
   processTranslation(t) {
     return new Promise((resolve, reject) => {
+      if (t.locale) {
+        let shouldContinue = true;
+        if (t.locale.include) {
+          shouldContinue = false;
+          for (let l of t.locale.include) {
+            if (l === this.options.locale) {
+              shouldContinue = true;
+              break;
+            }
+          }
+        } else if (t.locale.exclude) {
+          shouldContinue = true;
+          for (let l of t.locale.exclude) {
+            if (l === this.options.locale) {
+              shouldContinue = false;
+              break;
+            }
+          }
+        }
+        if (!shouldContinue) {
+          resolve();
+          return;
+        }
+      }
       let srcGlob = t.src || '**/*';
       let srcPaths = path.join(this.options.dest, srcGlob);
       glob(srcPaths, null, (err, files) => {

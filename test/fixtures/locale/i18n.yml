@@ -1,0 +1,18 @@
+translations:
+- src: 'test.js'
+  locale:
+    include: ['ja']
+  patterns:
+  - pattern: foo
+    replace: '${foo}'
+- src: 'test.js'
+  locale:
+    exclude: ['ja']
+  patterns:
+  - pattern: bar
+    replace: '${bar}'
+- src: 'test.js'
+  locale:
+  patterns:
+  - pattern: baz
+    replace: '${baz}'
