@@ -617,6 +617,59 @@ then the result will be:
 You must use `!!js/regexp` to pattern.  
 To match a line, you must use `([^\n]*)`, otherwise the tool cannot calculate the required lines.
 
+### Include/exclude locales
+
+You can apply a translation config for specific locales using `locale.include` or `locale.exclude` option.
+
+For example, when the following configuration is given,
+
+```yaml
+# i18n.yml
+translations:
+# translation1
+- src: 'test.js'
+  locale:
+    include: ['ja']
+  patterns:
+  - pattern: foo
+    replace: '${foo}'
+# translation2
+- src: 'test.js'
+  locale:
+    exclude: ['ja']
+  patterns:
+  - pattern: bar
+    replace: '${bar}'
+# translation3
+- src: 'test.js'
+  patterns:
+  - pattern: baz
+    replace: '${baz}'
+
+# ja.yml
+foo: hoge
+bar: fuga
+baz: piyo
+```
+
+the following input file
+
+```
+foo
+bar
+baz
+```
+
+will be converted into:
+
+```
+hoge
+bar
+piyo
+```
+
+`translation1` and `translation3` can be applied to `ja` locale (`foo` -> `hoge`, `baz` -> `piyo`), but `translation2` (`bar` -> `fuga`) is not applied to `ja` config due to `locale.exclude`.
+
 ## License
 
 MIT
