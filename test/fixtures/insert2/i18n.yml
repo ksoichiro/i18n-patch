@@ -4,5 +4,8 @@ translations:
   - pattern: foo
     replace: '${foo}'
   - insert:
-      at: end
+      at: begin
       value: baz
+  - insert:
+      at: end
+      value: foobar

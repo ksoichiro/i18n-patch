@@ -26,10 +26,11 @@ test('insert is defined after normal patterns', t => {
   .then(() => {
     t.is(
       fs.readFileSync(path.join(tempDir, 'test.js'), 'utf8'),
-      `/*
+      `// qux
+/*
   bar
 */
-// qux
+// quux
 `);
   });
 });
