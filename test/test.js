@@ -129,6 +129,16 @@ test('exception is thrown when src is not given', t => {
   }
 });
 
+test('empty option is set when option is not given', t => {
+  try {
+    let i18nPatch = new I18nPatch('../example/src', null);
+    t.ok(i18nPatch.options);
+    t.pass();
+  } catch (err) {
+    t.fail();
+  }
+});
+
 test('exception is thrown when config not found', t => {
   let tempDir = temp.mkdirSync('foo');
   let opts = {
