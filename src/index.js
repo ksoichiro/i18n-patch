@@ -221,6 +221,10 @@ export default class I18nPatch {
           return;
         }
         async.eachLimit(files, 100, (file, cb) => {
+          if (fs.statSync(file).isDirectory()) {
+            cb();
+            return;
+          }
           this.processFile(t, file)
           .catch((err) => cb(err))
           .then(() => cb());

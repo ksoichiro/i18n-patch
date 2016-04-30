@@ -1,4 +1,7 @@
 translations:
+- patterns:
+  - pattern: 'nothing'
+    replace: 'foobarbaz'
 - src: '**/*.js'
   patterns:
   - pattern: preview.text("Nothing to preview.");
