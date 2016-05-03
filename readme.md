@@ -670,6 +670,30 @@ piyo
 
 `translation1` and `translation3` can be applied to `ja` locale (`foo` -> `hoge`, `baz` -> `piyo`), but `translation2` (`bar` -> `fuga`) is not applied to `ja` config due to `locale.exclude`.
 
+### Add new files
+
+You can add new files using `add` option.
+
+```yaml
+# i18n.yml
+translations:
+- add:
+    path: 'a/b/test.js'
+    value: testContent
+
+# ja.yml
+testContent: |
+             // foo
+             // bar
+```
+
+This will generate the following file `a/b/test.js`:
+
+```javascript
+// foo
+// bar
+```
+
 ## License
 
 MIT
