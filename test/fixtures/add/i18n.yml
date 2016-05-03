@@ -1,0 +1,4 @@
+translations:
+- add:
+    path: 'a/b/test.js'
+    value: testContent

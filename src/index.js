@@ -105,6 +105,10 @@ export default class I18nPatch {
           }
         }
       }
+      if (t.add) {
+        t.add.resolved = this.localeConfig[t.add.value];
+        continue;
+      }
       let patterns = [];
       for (let p of t.patterns) {
         let added = false;
@@ -212,6 +216,13 @@ export default class I18nPatch {
           resolve();
           return;
         }
+      }
+      if (t.add) {
+        let filePath = path.join(this.options.dest, t.add.path);
+        fs.mkdirsSync(path.dirname(filePath));
+        fs.writeFileSync(filePath, t.add.resolved, 'utf8');
+        resolve();
+        return;
       }
       let srcGlob = t.src || '**/*';
       let srcPaths = path.join(this.options.dest, srcGlob);
