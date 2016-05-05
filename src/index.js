@@ -85,7 +85,7 @@ export default class I18nPatch {
   readConfigFile(name) {
     let configPath = path.join(this.options.config, `${name}.yml`);
     if (pathExists.sync(configPath)) {
-      return yaml.load(fs.readFileSync(configPath, ENCODING));
+      return yaml.load(fs.readFileSync(configPath, ENCODING), {filename: configPath});
     } else {
       configPath = path.join(this.options.config, `${name}.json`);
       return JSON.parse(fs.readFileSync(configPath));

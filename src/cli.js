@@ -3,6 +3,7 @@
 
 import meow from 'meow';
 import I18nPatch from './';
+import { YAMLException } from 'js-yaml';
 
 const cli = meow(`
     Usage
@@ -31,5 +32,9 @@ if (!opts.locale || !src) {
 new I18nPatch(src, opts)
 .generate()
 .catch((err) => {
-  console.log(err);
+  if (err instanceof YAMLException) {
+    console.log(`Invalid YAML format: ${err.message}`);
+  } else {
+    console.log(err);
+  }
 });
