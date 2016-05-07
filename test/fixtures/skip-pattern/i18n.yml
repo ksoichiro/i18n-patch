@@ -1,0 +1,8 @@
+translations:
+- src: 'test.js'
+  skip-patterns:
+  - !!js/regexp /^$/
+  - !!js/regexp /secret/
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'

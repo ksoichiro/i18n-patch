@@ -694,6 +694,51 @@ This will generate the following file `a/b/test.js`:
 // bar
 ```
 
+### Skip patterns
+
+If you feel slow to process all files, consider using `skip-patterns` option.
+When the lines match these patterns, the subsequent pattern matching process will be skipped, which makes the entire processing faster in some cases.
+
+For example, when the following configuration is given,
+
+```yaml
+# i18n.yml
+translations:
+- src: 'test.js'
+  skip-patterns:
+  - !!js/regexp /^$/
+  - !!js/regexp /secret/
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+  
+# ja.yml
+foo: bar
+```
+
+the following input file
+
+```javascript
+/*
+
+  foo
+  foo secret
+*/
+```
+
+will be converted into:
+
+```javascript
+/*
+
+  bar
+  foo secret
+*/
+```
+
+You can see the line `  foo secret` is not translated.  
+This is because it matches one of the `skip-patterns`: `!!js/regexp /secret/`.
+
 ## License
 
 MIT

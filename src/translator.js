@@ -59,6 +59,16 @@ export default class Translator extends Transform {
     // If pendingPatterns are not empty,
     // it means that the first pattern need more lines.
     if (0 === this.pendingPatterns.length) {
+      if (t.skipPatterns) {
+        // This line should be skipped:
+        // no need to check if it matches t.patterns.
+        for (let skipPattern of t.skipPatterns) {
+          if (result.match(skipPattern)) {
+            this.push(result + NEWLINE);
+            return true;
+          }
+        }
+      }
       t.patterns.forEach((p) => {
         this.pendingPatterns.push(p);
       });
