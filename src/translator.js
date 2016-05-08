@@ -168,13 +168,13 @@ export default class Translator extends Transform {
             if (argResolved.resolved) {
               resolved = this.applyToArgResolved(resolved, argResolved, `{${i}}`);
             } else {
-              resolved = resolved.replace(`{${i}}`, argResolved.replace);
+              resolved = resolved.replace(new RegExp(`\\{${i}\\}`, 'g'), argResolved.replace);
             }
           } else {
-            resolved = resolved.replace(`{${i}}`, argResolved);
+            resolved = resolved.replace(new RegExp(`\\{${i}\\}`, 'g'), argResolved);
           }
         } else {
-          resolved = resolved.replace(`{${i}}`, obj.args[i]);
+          resolved = resolved.replace(new RegExp(`\\{${i}\\}`, 'g'), obj.args[i]);
         }
       }
     }
