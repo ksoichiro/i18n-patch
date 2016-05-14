@@ -95,6 +95,11 @@ test('not translate if translation is undefined', t => {
           {
             "pattern": "preview.text(\"Loading...\");",
             "replace": "preview.text(\"${loading}\");"
+          },
+          // "replace" without variables can be also replaced.
+          {
+            "pattern": /preview\."/,
+            "replace": "preview!\""
           }
         ]
       }
@@ -111,7 +116,7 @@ test('not translate if translation is undefined', t => {
   .then(() => {
     t.is(
       fs.readFileSync(path.join(tempDir, 'js/sample.js'), 'utf8'),
-      `preview.text("Nothing to preview.");
+      `preview.text("Nothing to preview!");
 preview.text("読み込み中...");
 console.log('other codes should be untouched.');
 `);

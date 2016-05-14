@@ -351,7 +351,7 @@ export default class I18nPatch {
       return;
     }
 
-    obj.resolved = this.resolveTranslationKey(obj.replace);
+    obj.resolved = this.resolveTranslationKey(obj.replace, true);
     if (obj.args) {
       obj.argsResolved = [];
       for (let i = 0; i < obj.args.length; i++) {
@@ -360,7 +360,7 @@ export default class I18nPatch {
           this.resolve(a);
           obj.argsResolved.push(a);
         } else if (a) {
-          obj.argsResolved.push(this.resolveTranslationKey(a));
+          obj.argsResolved.push(this.resolveTranslationKey(a, false));
         }
       }
     }
@@ -370,15 +370,20 @@ export default class I18nPatch {
     return this.localeConfig.hasOwnProperty(key);
   }
 
-  resolveTranslationKey(target) {
+  resolveTranslationKey(target, returnOriginalIfTranslationMissing) {
     let resolved = false;
+    let variableDefined = false;
     let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
+      variableDefined = true;
       if (this.hasTranslationKey(matched)) {
         resolved = true;
       }
       return this.localeConfig[matched];
     });
     if (!resolved) {
+      if (returnOriginalIfTranslationMissing && !variableDefined) {
+        return target;
+      }
       result = undefined;
     }
     return result;
