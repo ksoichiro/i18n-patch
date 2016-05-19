@@ -40,6 +40,7 @@
     "js-yaml": "^3.5.5",
     "meow": "^3.7.0",
     "path-exists": "^2.1.0",
+    "pretty-hrtime": "^1.0.2",
     "temp": "^0.8.3"
   },
   "devDependencies": {

@@ -10,13 +10,14 @@ const cli = meow(`
       $ i18n-patch <locale> <src> [<dest>]
 
     Options
-      --config  Base path for config files.
-                i18n.yml and <locale>.yml is required.
-                json is also available instead of yaml.
-                'config' by default.
+      --config      Base path for config files.
+                    i18n.yml and <locale>.yml is required.
+                    json is also available instead of yaml.
+                    'config' by default.
+      --statistics  Show statistics.
 
     Examples
-      $ i18n-patch --config example/config ja example/src example/out
+      $ i18n-patch --config example/config --statistics -- ja example/src example/out
 `);
 
 const opts = cli.flags;

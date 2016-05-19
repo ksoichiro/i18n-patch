@@ -11,6 +11,7 @@ const temp = require('temp').track();
 const pathExists = require('path-exists');
 const camelCase = require('camelcase');
 const clone = require('clone');
+const prettyHrtime = require('pretty-hrtime');
 
 const NEWLINE = '\n';
 const ENCODING = 'utf8';
@@ -26,6 +27,7 @@ export default class I18nPatch {
     this.options = options || {};
     this.options.dest = this.options.dest || this.src;
     this.options.config = this.options.config || 'config';
+    this.options.statistics = this.options.statistics || false;
   }
 
   generate(config, localeConfig) {
@@ -40,11 +42,19 @@ export default class I18nPatch {
         fs.copySync(this.src, this.options.dest);
       }
 
+      for (let i = 0; i < this.config.translations.length; i++) {
+        this.config.translations[i].id = i + 1;
+      }
       async.waterfall(this.config.translations.map((t) => {
         return (cb) => {
+          let startTime = process.hrtime();
           this.processTranslation(t)
           .catch((err) => cb(err))
-          .then(() => cb());
+          .then(() => {
+            t.statistics.time = process.hrtime(startTime);
+            this.showStatistics(t);
+            cb();
+          });
         };
       }), (err) => {
         if (err) {
@@ -94,6 +104,8 @@ export default class I18nPatch {
 
   buildPatterns() {
     for (let t of this.config.translations) {
+      t.statistics = {};
+      t.statistics.files = 0;
       if (t.conditionals) {
         for (let c of t.conditionals) {
           if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
@@ -252,6 +264,7 @@ export default class I18nPatch {
 
   processFile(t, file) {
     return new Promise((resolve, reject) => {
+      t.statistics.files++;
       this.processFilePerLine(t, file)
       .catch((err) => reject(err))
       .then((file) => {
@@ -387,5 +400,15 @@ export default class I18nPatch {
       result = undefined;
     }
     return result;
+  }
+
+  showStatistics(t) {
+    if (this.options.statistics) {
+      let name = t.name || t.src || '';
+      if (name !== '') {
+        name = ` (${name})`;
+      }
+      console.log(`[${t.id}]${name}: processed ${t.statistics.files} files in ${prettyHrtime(t.statistics.time)}`);
+    }
   }
 }

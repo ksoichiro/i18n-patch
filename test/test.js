@@ -15,7 +15,8 @@ test('normal patterns', t => {
   let opts = {
     config: '../example',
     locale: 'ja',
-    dest: tempDir
+    dest: tempDir,
+    statistics: true
   };
   return new I18nPatch('../example/src', opts)
   .generate()
