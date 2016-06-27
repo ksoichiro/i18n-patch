@@ -106,6 +106,7 @@ export default class I18nPatch {
     for (let t of this.config.translations) {
       t.statistics = {};
       t.statistics.files = 0;
+      t.statistics.patterns = 0;
       if (t.conditionals) {
         for (let c of t.conditionals) {
           if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
@@ -191,6 +192,7 @@ export default class I18nPatch {
         }
       }
       t.patterns = patterns;
+      t.statistics.patterns = patterns.length;
       for (let p of t.patterns) {
         this.resolve(p);
         if (p.insert && this.hasTranslationKey(p.insert.value)) {
@@ -408,7 +410,7 @@ export default class I18nPatch {
       if (name !== '') {
         name = ` (${name})`;
       }
-      console.log(`[${t.id}]${name}: processed ${t.statistics.files} files in ${prettyHrtime(t.statistics.time)}`);
+      console.log(`[${t.id}]${name}: processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`);
     }
   }
 }
