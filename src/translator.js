@@ -70,7 +70,9 @@ export default class Translator extends Transform {
         }
       }
       t.patterns.forEach((p) => {
-        this.pendingPatterns.push(p);
+        if (!p.matchOnce || !p.matched) {
+          this.pendingPatterns.push(p);
+        }
       });
     }
     while (this.pendingPatterns.length) {
@@ -136,6 +138,10 @@ export default class Translator extends Transform {
         }
       }
       this.matched = true;
+      if (p.matchOnce) {
+        // Mark as matched to skip this pattern next time
+        p.matched = true;
+      }
       if (t.conditionals) {
         for (let c of t.conditionals) {
           if (!c.insert || !c.insert.resolved) {

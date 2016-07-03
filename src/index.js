@@ -81,15 +81,34 @@ export default class I18nPatch {
       this.localeConfig = this.readConfigFile(this.options.locale);
     }
 
-    for (let t of this.config.translations) {
-      Object.keys(t).forEach((key) => {
-        let converted = camelCase(key);
-        if (key !== converted) {
-          t[camelCase(key)] = t[key];
-          delete t[key];
-        }
-      });
+    this.camelize(this.config.translations);
+  }
+
+  camelize(config) {
+    if (!config) {
+      return;
     }
+    if (typeof config === 'object') {
+      this.camelizeObject(config);
+    } else if (config instanceof Array) {
+      for (let t of config) {
+        this.camelizeObject(t);
+      }
+    }
+  }
+
+  camelizeObject(obj) {
+    if (!obj) {
+      return;
+    }
+    Object.keys(obj).forEach((key) => {
+      let converted = camelCase(key);
+      if (key !== converted) {
+        obj[converted] = obj[key];
+        delete obj[key];
+      }
+      this.camelize(obj[converted]);
+    });
   }
 
   readConfigFile(name) {
