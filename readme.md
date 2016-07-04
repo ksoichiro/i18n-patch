@@ -130,6 +130,11 @@ for providing i18n patch GitLab project without Git branch management.
 * [Code insertion](#code-insertion)
 * [Conditional insertion for all matching files](#conditional-insertion-for-all-matching-files)
 * [Named patterns](#named-patterns)
+* [Multiline](#multiline)
+* [Include/exclude locales](#includeexclude-locales)
+* [Add new files](#add-new-files)
+* [Skip patterns](#skip-patterns)
+* [Match once](#match-once)
 
 ### Basic
 
@@ -739,6 +744,59 @@ will be converted into:
 
 You can see the line `  foo secret` is not translated.  
 This is because it matches one of the `skip-patterns`: `!!js/regexp /secret/`.
+
+### Match once
+
+If you specifies many files for a pattern and the pattern is aimed to
+match just one file, you can use `match-once` flag.
+
+If `match-once: true` is set for a pattern,
+then only the first file among all of the candidate files will be replaced,
+which will contribute to improve performance.
+
+For example, if the following config is given,
+
+```yaml
+# i18n.yml
+translations:
+- src: 'src/*.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+    match-once: true
+
+# ja.yml
+foo: bar
+```
+
+and if there are two files,
+
+```javascript
+// src/a.js
+console.log('hello, foo');
+console.log('good morning, foo');
+```
+
+```javascript
+// src/b.js
+console.log('hi, foo');
+```
+
+then only the first matching expression in the first file (src/a.js)
+will be replaced:
+
+```javascript
+// src/a.js
+console.log('hello, bar');
+console.log('good morning, foo');
+```
+
+```javascript
+// src/b.js
+console.log('hi, foo');
+```
+
+This option can be used with `named-pattern`.
 
 ## License
 
