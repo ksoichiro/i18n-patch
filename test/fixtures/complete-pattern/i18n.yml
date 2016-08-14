@@ -1,0 +1,8 @@
+translations:
+- src: 'test.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+    complete-pattern: true
+  - pattern: 'bar'
+    replace: '${bar}'

@@ -135,6 +135,7 @@ for providing i18n patch GitLab project without Git branch management.
 * [Add new files](#add-new-files)
 * [Skip patterns](#skip-patterns)
 * [Match once](#match-once)
+* [Complete pattern](#complete-pattern)
 
 ### Basic
 
@@ -797,6 +798,56 @@ console.log('hi, foo');
 ```
 
 This option can be used with `named-pattern`.
+
+### Complete pattern
+
+If one of your patterns is complete pattern
+and don't require other translation, then you can set `complete-pattern: true` to skip other translations for the matched lines.
+
+This will be useful when you have many patterns and
+the translations take long time.
+
+For example, if the following config is given,
+
+```yaml
+# i18n.yml
+translations:
+- src: 'test.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+    complete-pattern: true
+  - pattern: 'bar'
+    replace: '${bar}'
+
+# ja.yml
+foo: FOO
+bar: BAR
+```
+
+and if there is a following file,
+
+```javascript
+/*
+  bar
+  foo bar
+  bar baz
+*/
+```
+
+then the result will be like this:
+
+```javascript
+/*
+  BAR
+  FOO bar
+  BAR baz
+*/
+```
+
+The line `foo bar` matches the pattern `foo`
+and it is defined with `complete-pattern: true`,
+so the line `foo bar` does not match the pattern `bar`.
 
 ## License
 

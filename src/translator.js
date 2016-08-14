@@ -158,6 +158,10 @@ export default class Translator extends Transform {
           }
         }
       }
+      if (p.completePattern) {
+        this.pendingPatterns = [];
+        break;
+      }
     }
     // TODO Preserve original newline if possible
     this.push(result + NEWLINE);
