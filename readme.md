@@ -136,6 +136,7 @@ for providing i18n patch GitLab project without Git branch management.
 * [Skip patterns](#skip-patterns)
 * [Match once](#match-once)
 * [Complete pattern](#complete-pattern)
+* [Parallel groups](#parallel-groups)
 
 ### Basic
 
@@ -848,6 +849,23 @@ then the result will be like this:
 The line `foo bar` matches the pattern `foo`
 and it is defined with `complete-pattern: true`,
 so the line `foo bar` does not match the pattern `bar`.
+
+### Parallel groups
+
+When you want to process several `translation`s in parallel,  
+you can use `parallel-group` option.
+
+```yaml
+# i18n.yml
+translations:
+- name: 'foo'
+  parallel-group: 'group1'
+- name: 'bar'
+  parallel-group: 'group1'
+- name: 'baz'
+```
+
+With the above example, `foo` and `bar` will be processed in parallel because the same `parallel-group` value `group1` is given, and then `baz` will be processed.
 
 ## License
 

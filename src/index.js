@@ -45,15 +45,21 @@ export default class I18nPatch {
       for (let i = 0; i < this.config.translations.length; i++) {
         this.config.translations[i].id = i + 1;
       }
-      async.waterfall(this.config.translations.map((t) => {
+      async.series(this.createParallelGroups().map((parallelGroup) => {
         return (cb) => {
-          let startTime = process.hrtime();
-          this.processTranslation(t)
-          .catch((err) => cb(err))
-          .then(() => {
-            t.statistics.time = process.hrtime(startTime);
-            this.showStatistics(t);
-            cb();
+          async.parallel(parallelGroup.map((t) => {
+            return (cb2) => {
+              let startTime = process.hrtime();
+              this.processTranslation(t)
+              .catch((err) => cb2(err))
+              .then(() => {
+                t.statistics.time = process.hrtime(startTime);
+                this.showStatistics(t);
+                cb2();
+              });
+            };
+          }), (err) => {
+            cb(err);
           });
         };
       }), (err) => {
@@ -421,6 +427,38 @@ export default class I18nPatch {
       result = undefined;
     }
     return result;
+  }
+
+  createParallelGroups() {
+    let parallelGroups = [];
+    let done = [];
+    for (let i = 0; i < this.config.translations.length; i++) {
+      done.push(false);
+    }
+    for (let i = 0; i < this.config.translations.length; i++) {
+      if (done[i]) {
+        continue;
+      }
+      if (this.config.translations[i].hasOwnProperty('parallelGroup')) {
+        // Search the same translation in rest of the translations
+        let parallelGroupId = this.config.translations[i].parallelGroup;
+        let group = [this.config.translations[i]];
+        for (let j = i + 1; j < this.config.translations.length; j++) {
+          if (this.config.translations[j].hasOwnProperty('parallelGroup')) {
+            let parallelGroupId2 = this.config.translations[j].parallelGroup;
+            if (parallelGroupId === parallelGroupId2) {
+              group.push(this.config.translations[j]);
+              done[j] = true;
+            }
+          }
+        }
+        parallelGroups.push(group);
+      } else {
+        parallelGroups.push([this.config.translations[i]]);
+      }
+      done[i] = true;
+    }
+    return parallelGroups;
   }
 
   showStatistics(t) {
