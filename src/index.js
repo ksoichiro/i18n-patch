@@ -113,103 +113,135 @@ export default class I18nPatch {
 
   buildPatterns() {
     for (let t of this.config.translations) {
-      t.statistics = {};
-      t.statistics.files = 0;
-      t.statistics.patterns = 0;
-      if (t.conditionals) {
-        for (let c of t.conditionals) {
-          if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
-            continue;
-          }
-          c.insert.resolved = this.localeConfig[c.insert.value];
-          if (c.insert.resolved && !c.insert.resolved.endsWith(NEWLINE)) {
-            c.insert.resolved += NEWLINE;
-          }
-        }
-      }
+      t.statistics = {files: 0, patterns: 0};
+      this.buildConditionals(t);
       if (t.add) {
         t.add.resolved = this.localeConfig[t.add.value];
         continue;
       }
-      let patterns = [];
-      for (let p of t.patterns) {
-        let added = false;
-        if (p.name) {
-          if (t.namedPatterns) {
-            let namedPattern;
-            for (let np of t.namedPatterns) {
-              if (p.name === np.name) {
-                namedPattern = np;
-                break;
-              }
-            }
-            if (namedPattern) {
-              let paramsSet = [];
-              if (Array.isArray(p.params)) {
-                paramsSet = p.params;
-              } else {
-                paramsSet = [p.params];
-              }
-              for (let params of paramsSet) {
-                let npPattern = namedPattern.pattern;
-                let npExclude = namedPattern.exclude;
-                let npReplace = namedPattern.replace;
-                let npArgs = clone(namedPattern.args);
-                let npFlags = 'g';
-                for (let npp of namedPattern.params) {
-                  if (params.hasOwnProperty(npp)) {
-                    npPattern = npPattern.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
-                    if (npExclude) {
-                      npExclude = npExclude.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
-                    }
-                    npReplace = npReplace.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
-                    if (npArgs) {
-                      for (let a of npArgs) {
-                        if (a.replace && typeof a.replace !== 'function' && a.replace.replace) {
-                          a.replace = a.replace.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
-                        } else if (a) {
-                          a = a.replace(new RegExp(`{${npp}}`, npFlags), params[npp]);
-                        }
-                      }
-                    }
-                  }
-                }
-                let newPattern = {};
-                newPattern.pattern = new RegExp(npPattern);
-                if (namedPattern.exclude) {
-                  if (namedPattern.flags) {
-                    newPattern.exclude = new RegExp(npExclude, namedPattern.flags);
-                  } else {
-                    newPattern.exclude = new RegExp(npExclude);
-                  }
-                }
-                newPattern.replace = npReplace;
-                if (namedPattern.flags) {
-                  newPattern.flags = namedPattern.flags;
-                }
-                if (namedPattern.args) {
-                  newPattern.args = npArgs;
-                }
-                patterns.push(newPattern);
-                added = true;
-              }
-            }
+      this.buildPatternsForTranslation(t);
+      t.statistics.patterns = t.patterns.length;
+      this.resolvePatternsForTranslation(t);
+    }
+  }
+
+  buildConditionals(t) {
+    if (!t.conditionals) {
+      return;
+    }
+    for (let c of t.conditionals) {
+      if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
+        continue;
+      }
+      c.insert.resolved = this.localeConfig[c.insert.value];
+      if (c.insert.resolved && !c.insert.resolved.endsWith(NEWLINE)) {
+        c.insert.resolved += NEWLINE;
+      }
+    }
+  }
+
+  buildPatternsForTranslation(t) {
+    let patterns = [];
+    for (let p of t.patterns) {
+      this.buildOnePatternForTranslation(t, p, patterns);
+    }
+    t.patterns = patterns;
+  }
+
+  buildOnePatternForTranslation(t, p, patterns) {
+    let added = false;
+    if (p.name && t.namedPatterns) {
+      let namedPattern = this.findNamedPattern(t, p);
+      if (!namedPattern) {
+        patterns.push(p);
+        return;
+      }
+      let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
+      for (let params of paramsSet) {
+        patterns.push(this.buildNamedPatternWithParams(namedPattern, params));
+        added = true;
+      }
+    }
+    if (!added) {
+      patterns.push(p);
+    }
+  }
+
+  findNamedPattern(t, p) {
+    for (let np of t.namedPatterns) {
+      if (p.name === np.name) {
+        return np;
+      }    }
+    return null;
+  }
+
+  buildNamedPatternWithParams(namedPattern, params) {
+    let np = this.resolveNamedPattern(namedPattern, params);
+    let newPattern = {};
+    newPattern.pattern = new RegExp(np.pattern);
+    if (np.exclude) {
+      if (namedPattern.flags) {
+        newPattern.exclude = new RegExp(np.exclude, namedPattern.flags);
+      } else {
+        newPattern.exclude = new RegExp(np.exclude);
+      }
+    }
+    newPattern.replace = np.replace;
+    if (namedPattern.flags) {
+      newPattern.flags = namedPattern.flags;
+    }
+    if (np.args) {
+      newPattern.args = np.args;
+    }
+    return newPattern;
+  }
+
+  resolveNamedPattern(namedPattern, params) {
+    let np = {
+      pattern: namedPattern.pattern,
+      exclude: namedPattern.exclude,
+      replace: namedPattern.replace,
+      args: clone(namedPattern.args)
+    };
+    for (let npp of namedPattern.params) {
+      if (!params.hasOwnProperty(npp)) {
+        continue;
+      }
+      let replaceParam = (target) => target.replace(new RegExp(`{${npp}}`, 'g'), params[npp]);
+      np.pattern = replaceParam(np.pattern);
+      if (np.exclude) {
+        np.exclude = replaceParam(np.exclude);
+      }
+      np.replace = replaceParam(np.replace);
+      if (np.args) {
+        for (let a of np.args) {
+          if (this.isString(a.replace)) {
+            a.replace = replaceParam(a.replace);
+          } else {
+            a = replaceParam(a);
           }
-        }
-        if (!added) {
-          patterns.push(p);
         }
       }
-      t.patterns = patterns;
-      t.statistics.patterns = patterns.length;
-      for (let p of t.patterns) {
-        this.resolve(p);
-        if (p.insert && this.hasTranslationKey(p.insert.value)) {
-          p.insert.resolved = this.localeConfig[p.insert.value];
-          if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
-            p.insert.resolved += NEWLINE;
-          }
-        }
+    }
+    return np;
+  }
+
+  isString(s) {
+    return s && typeof s !== 'function' && s.replace;
+  }
+
+  resolvePatternsForTranslation(t) {
+    for (let p of t.patterns) {
+      this.resolvePattern(p);
+    }
+  }
+
+  resolvePattern(p) {
+    this.resolve(p);
+    if (p.insert && this.hasTranslationKey(p.insert.value)) {
+      p.insert.resolved = this.localeConfig[p.insert.value];
+      if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
+        p.insert.resolved += NEWLINE;
       }
     }
   }
