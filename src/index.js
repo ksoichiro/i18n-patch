@@ -47,20 +47,15 @@ export default class I18nPatch {
       }
       async.series(this.createParallelGroups().map((parallelGroup) => {
         return (cb) => {
-          async.parallel(parallelGroup.map((t) => {
-            return (cb2) => {
-              let startTime = process.hrtime();
-              this.processTranslation(t)
-              .catch((err) => cb2(err))
-              .then(() => {
-                t.statistics.time = process.hrtime(startTime);
-                this.showStatistics(t);
-                cb2();
-              });
-            };
-          }), (err) => {
-            cb(err);
-          });
+          if (parallelGroup.length < 2) {
+            this.processTranslationForGroup(parallelGroup[0], cb);
+          } else {
+            async.parallel(parallelGroup.map((t) => {
+              return (cb2) => this.processTranslationForGroup(t, cb2);
+            }), (err) => {
+              cb(err);
+            });
+          }
         };
       }), (err) => {
         if (err) {
@@ -459,6 +454,17 @@ export default class I18nPatch {
       done[i] = true;
     }
     return parallelGroups;
+  }
+
+  processTranslationForGroup(t, cb) {
+    let startTime = process.hrtime();
+    this.processTranslation(t)
+    .catch((err) => cb(err))
+    .then(() => {
+      t.statistics.time = process.hrtime(startTime);
+      this.showStatistics(t);
+      cb();
+    });
   }
 
   showStatistics(t) {
