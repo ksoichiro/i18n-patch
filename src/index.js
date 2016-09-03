@@ -4,12 +4,12 @@ import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
 import 'babel-polyfill';
+import Camelizer from './camelizer';
 import Translator from './translator';
 const async = require('async');
 const yaml = require('js-yaml');
 const temp = require('temp').track();
 const pathExists = require('path-exists');
-const camelCase = require('camelcase');
 const clone = require('clone');
 const prettyHrtime = require('pretty-hrtime');
 
@@ -71,34 +71,7 @@ export default class I18nPatch {
       this.localeConfig = this.readConfigFile(this.options.locale);
     }
 
-    this.camelize(this.config.translations);
-  }
-
-  camelize(config) {
-    if (!config) {
-      return;
-    }
-    if (typeof config === 'object') {
-      this.camelizeObject(config);
-    } else if (config instanceof Array) {
-      for (let t of config) {
-        this.camelizeObject(t);
-      }
-    }
-  }
-
-  camelizeObject(obj) {
-    if (!obj) {
-      return;
-    }
-    Object.keys(obj).forEach((key) => {
-      let converted = camelCase(key);
-      if (key !== converted) {
-        obj[converted] = obj[key];
-        delete obj[key];
-      }
-      this.camelize(obj[converted]);
-    });
+    new Camelizer().camelize(this.config.translations);
   }
 
   readConfigFile(name) {
