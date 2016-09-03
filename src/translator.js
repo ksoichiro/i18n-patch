@@ -45,6 +45,14 @@ export default class Translator extends Transform {
     done();
   }
 
+  hasBeginBuffer() {
+    return 1 <= this.beginBuffer.length;
+  }
+
+  hasEndBuffer() {
+    return 1 <= this.endBuffer.length;
+  }
+
   process() {
     while (this.buffer.length) {
       if (!this.processLine(this.t, this.buffer.shift())) {

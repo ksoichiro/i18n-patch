@@ -149,18 +149,20 @@ export default class I18nPatch {
   }
 
   buildOnePatternForTranslation(t, p, patterns) {
+    if (!p.name || !t.namedPatterns) {
+      patterns.push(p);
+      return;
+    }
     let added = false;
-    if (p.name && t.namedPatterns) {
-      let namedPattern = this.findNamedPattern(t, p);
-      if (!namedPattern) {
-        patterns.push(p);
-        return;
-      }
-      let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
-      for (let params of paramsSet) {
-        patterns.push(this.buildNamedPatternWithParams(namedPattern, params));
-        added = true;
-      }
+    let namedPattern = this.findNamedPattern(t, p);
+    if (!namedPattern) {
+      patterns.push(p);
+      return;
+    }
+    let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
+    for (let params of paramsSet) {
+      patterns.push(this.buildNamedPatternWithParams(namedPattern, params));
+      added = true;
     }
     if (!added) {
       patterns.push(p);
@@ -171,7 +173,8 @@ export default class I18nPatch {
     for (let np of t.namedPatterns) {
       if (p.name === np.name) {
         return np;
-      }    }
+      }
+    }
     return null;
   }
 
@@ -296,9 +299,7 @@ export default class I18nPatch {
   }
 
   processTranslationsForMatchingFiles(t, resolve, reject) {
-    let srcGlob = t.src || '**/*';
-    let srcPaths = path.join(this.options.dest, srcGlob);
-    glob(srcPaths, {nodir: true}, (err, files) => {
+    glob(path.join(this.options.dest, t.src || '**/*'), {nodir: true}, (err, files) => {
       if (err) {
         reject(err);
         return;
@@ -336,7 +337,6 @@ export default class I18nPatch {
 
   processFilePerLine(t, file) {
     return new Promise((resolve, reject) => {
-      // Per-line processing
       let translator = new Translator(t);
       let out = temp.createWriteStream();
       fs.createReadStream(file)
@@ -345,39 +345,45 @@ export default class I18nPatch {
       .pipe(out)
       .on('error', reject)
       .on('close', () => {
-        if (translator.matched) {
-          // TODO Preserve original file stats
-          fs.copySync(out.path, file);
-
-          if (1 <= translator.beginBuffer.length) {
-            let value = '';
-            for (let e of translator.beginBuffer) {
-              value += e;
-              if (!e.endsWith(NEWLINE)) {
-                value += NEWLINE;
-              }
-            }
-            let content = fs.readFileSync(file, ENCODING);
-            fs.writeFileSync(file, value + content, ENCODING);
-          }
-          if (1 <= translator.endBuffer.length) {
-            let value = '';
-            for (let e of translator.endBuffer) {
-              value += e;
-              if (!e.endsWith(NEWLINE)) {
-                value += NEWLINE;
-              }
-            }
-            let content = fs.readFileSync(file, ENCODING);
-            if (!content.endsWith(NEWLINE)) {
-              content += NEWLINE;
-            }
-            fs.writeFileSync(file, content + value, ENCODING);
-          }
-        }
+        this.postProcessOnClose(translator, out, file);
         resolve(file);
       });
     });
+  }
+
+  postProcessOnClose(translator, out, file) {
+    if (!translator.matched) {
+      // Nothing has been changed, so ignore the temporary file
+      return;
+    }
+    // Overwrite the target file with the result
+    fs.copySync(out.path, file);
+    // TODO Preserve original file stats
+    if (translator.hasBeginBuffer()) {
+      let value = '';
+      for (let e of translator.beginBuffer) {
+        value += e;
+        if (!e.endsWith(NEWLINE)) {
+          value += NEWLINE;
+        }
+      }
+      let content = fs.readFileSync(file, ENCODING);
+      fs.writeFileSync(file, value + content, ENCODING);
+    }
+    if (translator.hasEndBuffer()) {
+      let value = '';
+      for (let e of translator.endBuffer) {
+        value += e;
+        if (!e.endsWith(NEWLINE)) {
+          value += NEWLINE;
+        }
+      }
+      let content = fs.readFileSync(file, ENCODING);
+      if (!content.endsWith(NEWLINE)) {
+        content += NEWLINE;
+      }
+      fs.writeFileSync(file, content + value, ENCODING);
+    }
   }
 
   processFilePerFile(t, file) {
