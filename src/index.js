@@ -38,37 +38,26 @@ export default class I18nPatch {
         reject(err);
       }
       this.buildPatterns();
-      if (this.hasDest()) {
-        fs.copySync(this.src, this.options.dest);
-      }
-
-      for (let i = 0; i < this.config.translations.length; i++) {
-        this.config.translations[i].id = i + 1;
-      }
-      async.series(this.createParallelGroups().map((parallelGroup) => {
-        return (cb) => {
-          if (parallelGroup.length < 2) {
-            this.processTranslationForGroup(parallelGroup[0], cb);
-          } else {
-            async.parallel(parallelGroup.map((t) => {
-              return (cb2) => this.processTranslationForGroup(t, cb2);
-            }), (err) => {
-              cb(err);
-            });
-          }
-        };
-      }), (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+      this.copySrc();
+      this.setTranslationIds();
+      async.series(this.processTranslations(), (err) => err ? reject(err) : resolve());
     });
+  }
+
+  copySrc() {
+    if (this.hasDest()) {
+      fs.copySync(this.src, this.options.dest);
+    }
   }
 
   hasDest() {
     return this.src !== this.options.dest;
+  }
+
+  setTranslationIds() {
+    for (let i = 0; i < this.config.translations.length; i++) {
+      this.config.translations[i].id = i + 1;
+    }
   }
 
   setConfigs(config, localeConfig) {
@@ -424,6 +413,18 @@ export default class I18nPatch {
     return result;
   }
 
+  processTranslations() {
+    return this.createParallelGroups().map((parallelGroup) => {
+      return (cb) => {
+        if (parallelGroup.length < 2) {
+          this.processTranslationForGroup(parallelGroup[0], cb);
+        } else {
+          this.processTranslationForGroupsInParallel(parallelGroup, cb);
+        }
+      };
+    });
+  }
+
   createParallelGroups() {
     let parallelGroups = [];
     let done = [];
@@ -464,6 +465,14 @@ export default class I18nPatch {
       t.statistics.time = process.hrtime(startTime);
       this.showStatistics(t);
       cb();
+    });
+  }
+
+  processTranslationForGroupsInParallel(parallelGroup, cb) {
+    async.parallel(parallelGroup.map((t) => {
+      return (cb2) => this.processTranslationForGroup(t, cb2);
+    }), (err) => {
+      cb(err);
     });
   }
 
