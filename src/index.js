@@ -308,13 +308,7 @@ export default class I18nPatch {
         this.processFile(t, file)
         .catch((err) => cb(err))
         .then(() => cb());
-      }, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+      }, (err) => err ? reject(err) : resolve());
     });
   }
 
