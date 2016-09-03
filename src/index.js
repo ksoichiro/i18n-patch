@@ -216,59 +216,71 @@ export default class I18nPatch {
 
   processTranslation(t) {
     return new Promise((resolve, reject) => {
-      if (t.locale) {
-        let shouldContinue = true;
-        if (t.locale.include) {
-          shouldContinue = false;
-          for (let l of t.locale.include) {
-            if (l === this.options.locale) {
-              shouldContinue = true;
-              break;
-            }
-          }
-        } else if (t.locale.exclude) {
-          shouldContinue = true;
-          for (let l of t.locale.exclude) {
-            if (l === this.options.locale) {
-              shouldContinue = false;
-              break;
-            }
-          }
-        }
-        if (!shouldContinue) {
-          resolve();
-          return;
-        }
-      }
-      if (t.add) {
-        let filePath = path.join(this.options.dest, t.add.path);
-        fs.mkdirsSync(path.dirname(filePath));
-        fs.writeFileSync(filePath, t.add.resolved, 'utf8');
+      if (this.shouldQuitForThisLocale(t)) {
         resolve();
         return;
       }
-      let srcGlob = t.src || '**/*';
-      let srcPaths = path.join(this.options.dest, srcGlob);
-      glob(srcPaths, null, (err, files) => {
+      if (this.shouldJustAddFile(t)) {
+        resolve();
+        return;
+      }
+      this.processTranslationsForMatchingFiles(t, resolve, reject);
+    });
+  }
+
+  shouldQuitForThisLocale(t) {
+    if (!t.locale) {
+      return false;
+    }
+    let shouldContinue = true;
+    if (t.locale.include) {
+      shouldContinue = false;
+      for (let l of t.locale.include) {
+        if (l === this.options.locale) {
+          shouldContinue = true;
+          break;
+        }
+      }
+    } else if (t.locale.exclude) {
+      shouldContinue = true;
+      for (let l of t.locale.exclude) {
+        if (l === this.options.locale) {
+          shouldContinue = false;
+          break;
+        }
+      }
+    }
+    return !shouldContinue;
+  }
+
+  shouldJustAddFile(t) {
+    if (!t.add) {
+      return false;
+    }
+    let filePath = path.join(this.options.dest, t.add.path);
+    fs.mkdirsSync(path.dirname(filePath));
+    fs.writeFileSync(filePath, t.add.resolved, 'utf8');
+    return true;
+  }
+
+  processTranslationsForMatchingFiles(t, resolve, reject) {
+    let srcGlob = t.src || '**/*';
+    let srcPaths = path.join(this.options.dest, srcGlob);
+    glob(srcPaths, {nodir: true}, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      async.eachLimit(files, 100, (file, cb) => {
+        this.processFile(t, file)
+        .catch((err) => cb(err))
+        .then(() => cb());
+      }, (err) => {
         if (err) {
           reject(err);
-          return;
+        } else {
+          resolve();
         }
-        async.eachLimit(files, 100, (file, cb) => {
-          if (fs.statSync(file).isDirectory()) {
-            cb();
-            return;
-          }
-          this.processFile(t, file)
-          .catch((err) => cb(err))
-          .then(() => cb());
-        }, (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
       });
     });
   }
