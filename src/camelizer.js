@@ -8,15 +8,15 @@ export default class Camelizer {
       return;
     }
     if (typeof obj === 'object') {
-      this.camelizeObject(obj);
+      this._camelizeObject(obj);
     } else if (obj instanceof Array) {
       for (let elem of obj) {
-        this.camelizeObject(elem);
+        this._camelizeObject(elem);
       }
     }
   }
 
-  camelizeObject(obj) {
+  _camelizeObject(obj) {
     if (!obj) {
       return;
     }

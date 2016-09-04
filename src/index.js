@@ -35,37 +35,37 @@ export default class I18nPatch {
       } catch (err) {
         reject(err);
       }
-      this.buildPatterns();
-      this.copySrc();
-      async.series(this.processTranslations(), (err) => err ? reject(err) : resolve());
+      this._buildPatterns();
+      this._copySrc();
+      async.series(this._processTranslations(), (err) => err ? reject(err) : resolve());
     });
   }
 
-  copySrc() {
-    if (this.hasDest()) {
+  _copySrc() {
+    if (this._hasDest()) {
       fs.copySync(this.src, this.options.dest);
     }
   }
 
-  hasDest() {
+  _hasDest() {
     return this.src !== this.options.dest;
   }
 
-  buildPatterns() {
+  _buildPatterns() {
     for (let t of this.config.config.translations) {
       t.statistics = {files: 0, patterns: 0};
-      this.buildConditionals(t);
+      this._buildConditionals(t);
       if (t.add) {
         t.add.resolved = this.config.localeConfig[t.add.value];
         continue;
       }
-      this.buildPatternsForTranslation(t);
+      this._buildPatternsForTranslation(t);
       t.statistics.patterns = t.patterns.length;
-      this.resolvePatternsForTranslation(t);
+      this._resolvePatternsForTranslation(t);
     }
   }
 
-  buildConditionals(t) {
+  _buildConditionals(t) {
     if (!t.conditionals) {
       return;
     }
@@ -80,28 +80,28 @@ export default class I18nPatch {
     }
   }
 
-  buildPatternsForTranslation(t) {
+  _buildPatternsForTranslation(t) {
     let patterns = [];
     for (let p of t.patterns) {
-      this.buildOnePatternForTranslation(t, p, patterns);
+      this._buildOnePatternForTranslation(t, p, patterns);
     }
     t.patterns = patterns;
   }
 
-  buildOnePatternForTranslation(t, p, patterns) {
+  _buildOnePatternForTranslation(t, p, patterns) {
     if (!p.name || !t.namedPatterns) {
       patterns.push(p);
       return;
     }
     let added = false;
-    let namedPattern = this.findNamedPattern(t, p);
+    let namedPattern = this._findNamedPattern(t, p);
     if (!namedPattern) {
       patterns.push(p);
       return;
     }
     let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
     for (let params of paramsSet) {
-      patterns.push(this.buildNamedPatternWithParams(namedPattern, params));
+      patterns.push(this._buildNamedPatternWithParams(namedPattern, params));
       added = true;
     }
     if (!added) {
@@ -109,7 +109,7 @@ export default class I18nPatch {
     }
   }
 
-  findNamedPattern(t, p) {
+  _findNamedPattern(t, p) {
     for (let np of t.namedPatterns) {
       if (p.name === np.name) {
         return np;
@@ -118,8 +118,8 @@ export default class I18nPatch {
     return null;
   }
 
-  buildNamedPatternWithParams(namedPattern, params) {
-    let np = this.resolveNamedPattern(namedPattern, params);
+  _buildNamedPatternWithParams(namedPattern, params) {
+    let np = this._resolveNamedPattern(namedPattern, params);
     let newPattern = {};
     newPattern.pattern = new RegExp(np.pattern);
     if (np.exclude) {
@@ -139,7 +139,7 @@ export default class I18nPatch {
     return newPattern;
   }
 
-  resolveNamedPattern(namedPattern, params) {
+  _resolveNamedPattern(namedPattern, params) {
     let np = {
       pattern: namedPattern.pattern,
       exclude: namedPattern.exclude,
@@ -158,7 +158,7 @@ export default class I18nPatch {
       np.replace = replaceParam(np.replace);
       if (np.args) {
         for (let a of np.args) {
-          if (this.isString(a.replace)) {
+          if (this._isString(a.replace)) {
             a.replace = replaceParam(a.replace);
           } else {
             a = replaceParam(a);
@@ -169,18 +169,18 @@ export default class I18nPatch {
     return np;
   }
 
-  isString(s) {
+  _isString(s) {
     return s && typeof s !== 'function' && s.replace;
   }
 
-  resolvePatternsForTranslation(t) {
+  _resolvePatternsForTranslation(t) {
     for (let p of t.patterns) {
-      this.resolvePattern(p);
+      this._resolvePattern(p);
     }
   }
 
-  resolvePattern(p) {
-    this.resolve(p);
+  _resolvePattern(p) {
+    this._resolve(p);
     if (p.insert && this.config.hasTranslationKey(p.insert.value)) {
       p.insert.resolved = this.config.localeConfig[p.insert.value];
       if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
@@ -189,21 +189,21 @@ export default class I18nPatch {
     }
   }
 
-  processTranslation(t) {
+  _processTranslation(t) {
     return new Promise((resolve, reject) => {
-      if (this.shouldQuitForThisLocale(t)) {
+      if (this._shouldQuitForThisLocale(t)) {
         resolve();
         return;
       }
-      if (this.shouldJustAddFile(t)) {
+      if (this._shouldJustAddFile(t)) {
         resolve();
         return;
       }
-      this.processTranslationsForMatchingFiles(t, resolve, reject);
+      this._processTranslationsForMatchingFiles(t, resolve, reject);
     });
   }
 
-  shouldQuitForThisLocale(t) {
+  _shouldQuitForThisLocale(t) {
     if (!t.locale) {
       return false;
     }
@@ -228,7 +228,7 @@ export default class I18nPatch {
     return !shouldContinue;
   }
 
-  shouldJustAddFile(t) {
+  _shouldJustAddFile(t) {
     if (!t.add) {
       return false;
     }
@@ -238,28 +238,28 @@ export default class I18nPatch {
     return true;
   }
 
-  processTranslationsForMatchingFiles(t, resolve, reject) {
+  _processTranslationsForMatchingFiles(t, resolve, reject) {
     glob(path.join(this.options.dest, t.src || '**/*'), {nodir: true}, (err, files) => {
       if (err) {
         reject(err);
         return;
       }
       async.eachLimit(files, 100, (file, cb) => {
-        this.processFile(t, file)
+        this._processFile(t, file)
         .catch((err) => cb(err))
         .then(() => cb());
       }, (err) => err ? reject(err) : resolve());
     });
   }
 
-  processFile(t, file) {
+  _processFile(t, file) {
     return new Promise((resolve, reject) => {
       t.statistics.files++;
-      this.processFilePerLine(t, file)
+      this._processFilePerLine(t, file)
       .catch((err) => reject(err))
       .then((file) => {
-        if (this.hasPerFilePattern(t)) {
-          this.processFilePerFile(t, file)
+        if (this._hasPerFilePattern(t)) {
+          this._processFilePerFile(t, file)
           .catch((err) => reject(err))
           .then((file) => resolve(file));
         } else {
@@ -269,7 +269,7 @@ export default class I18nPatch {
     });
   }
 
-  processFilePerLine(t, file) {
+  _processFilePerLine(t, file) {
     return new Promise((resolve, reject) => {
       let translator = new Translator(t);
       let out = temp.createWriteStream();
@@ -279,13 +279,13 @@ export default class I18nPatch {
       .pipe(out)
       .on('error', reject)
       .on('close', () => {
-        this.postProcessOnClose(translator, out, file);
+        this._postProcessOnClose(translator, out, file);
         resolve(file);
       });
     });
   }
 
-  postProcessOnClose(translator, out, file) {
+  _postProcessOnClose(translator, out, file) {
     if (!translator.matched) {
       // Nothing has been changed, so ignore the temporary file
       return;
@@ -320,7 +320,7 @@ export default class I18nPatch {
     }
   }
 
-  processFilePerFile(t, file) {
+  _processFilePerFile(t, file) {
     return new Promise((resolve, reject) => {
       try {
         for (let p of t.patterns) {
@@ -350,31 +350,31 @@ export default class I18nPatch {
     });
   }
 
-  hasPerFilePattern(t) {
+  _hasPerFilePattern(t) {
     return !!t.patterns.find(p => p.insert);
   }
 
-  resolve(obj) {
+  _resolve(obj) {
     if (!obj.replace) {
       return;
     }
 
-    obj.resolved = this.resolveTranslationKey(obj.replace, true);
+    obj.resolved = this._resolveTranslationKey(obj.replace, true);
     if (obj.args) {
       obj.argsResolved = [];
       for (let i = 0; i < obj.args.length; i++) {
         let a = obj.args[i];
         if (a.replace && typeof a.replace !== 'function') {
-          this.resolve(a);
+          this._resolve(a);
           obj.argsResolved.push(a);
         } else if (a) {
-          obj.argsResolved.push(this.resolveTranslationKey(a, false));
+          obj.argsResolved.push(this._resolveTranslationKey(a, false));
         }
       }
     }
   }
 
-  resolveTranslationKey(target, returnOriginalIfTranslationMissing) {
+  _resolveTranslationKey(target, returnOriginalIfTranslationMissing) {
     let resolved = false;
     let variableDefined = false;
     let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
@@ -393,19 +393,19 @@ export default class I18nPatch {
     return result;
   }
 
-  processTranslations() {
-    return this.createParallelGroups().map((parallelGroup) => {
+  _processTranslations() {
+    return this._createParallelGroups().map((parallelGroup) => {
       return (cb) => {
         if (parallelGroup.length < 2) {
-          this.processTranslationForGroup(parallelGroup[0], cb);
+          this._processTranslationForGroup(parallelGroup[0], cb);
         } else {
-          this.processTranslationForGroupsInParallel(parallelGroup, cb);
+          this._processTranslationForGroupsInParallel(parallelGroup, cb);
         }
       };
     });
   }
 
-  createParallelGroups() {
+  _createParallelGroups() {
     let parallelGroups = [];
     let done = [];
     for (let i = 0; i < this.config.config.translations.length; i++) {
@@ -437,26 +437,26 @@ export default class I18nPatch {
     return parallelGroups;
   }
 
-  processTranslationForGroup(t, cb) {
+  _processTranslationForGroup(t, cb) {
     let startTime = process.hrtime();
-    this.processTranslation(t)
+    this._processTranslation(t)
     .catch((err) => cb(err))
     .then(() => {
       t.statistics.time = process.hrtime(startTime);
-      this.showStatistics(t);
+      this._showStatistics(t);
       cb();
     });
   }
 
-  processTranslationForGroupsInParallel(parallelGroup, cb) {
+  _processTranslationForGroupsInParallel(parallelGroup, cb) {
     async.parallel(parallelGroup.map((t) => {
-      return (cb2) => this.processTranslationForGroup(t, cb2);
+      return (cb2) => this._processTranslationForGroup(t, cb2);
     }), (err) => {
       cb(err);
     });
   }
 
-  showStatistics(t) {
+  _showStatistics(t) {
     if (this.options.statistics) {
       let name = t.name || t.src || '';
       if (name !== '') {

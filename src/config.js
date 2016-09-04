@@ -11,21 +11,25 @@ const ENCODING = 'utf8';
 export default class Config {
   constructor(options, config, localeConfig) {
     this.options = options;
-    this.config = config || this.readConfigFile('i18n');
+    this.config = config || this._readConfigFile('i18n');
     if (localeConfig) {
       this.localeConfig = localeConfig;
     } else {
       if (!this.options.locale) {
         throw new Error('Could not determine locale');
       }
-      this.localeConfig = this.readConfigFile(this.options.locale);
+      this.localeConfig = this._readConfigFile(this.options.locale);
     }
-    this.setTranslationIds();
+    this._setTranslationIds();
 
     new Camelizer().camelize(this.config.translations);
   }
 
-  readConfigFile(name) {
+  hasTranslationKey(key) {
+    return this.localeConfig.hasOwnProperty(key);
+  }
+
+  _readConfigFile(name) {
     let configPath = path.join(this.options.config, `${name}.yml`);
     if (pathExists.sync(configPath)) {
       return yaml.load(fs.readFileSync(configPath, ENCODING), {filename: configPath});
@@ -35,13 +39,9 @@ export default class Config {
     }
   }
 
-  setTranslationIds() {
+  _setTranslationIds() {
     for (let i = 0; i < this.config.translations.length; i++) {
       this.config.translations[i].id = i + 1;
     }
-  }
-
-  hasTranslationKey(key) {
-    return this.localeConfig.hasOwnProperty(key);
   }
 }

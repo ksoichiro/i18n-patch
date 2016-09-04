@@ -19,6 +19,14 @@ export default class Translator extends Transform {
     this.inputEnd = false;
   }
 
+  hasBeginBuffer() {
+    return 1 <= this.beginBuffer.length;
+  }
+
+  hasEndBuffer() {
+    return 1 <= this.endBuffer.length;
+  }
+
   _transform(chunk, encoding, done) {
     var data = chunk.toString();
     if (this.lastLineData) {
@@ -30,7 +38,7 @@ export default class Translator extends Transform {
     lines.forEach(function(line) {
       this.buffer.push(line);
     }.bind(this));
-    this.process();
+    this._process();
     done();
   }
 
@@ -39,30 +47,22 @@ export default class Translator extends Transform {
       this.buffer.push(this.lastLineData);
     }
     this.inputEnd = true;
-    this.process();
+    this._process();
     this.lastLineData = null;
     this.buffer = null;
     done();
   }
 
-  hasBeginBuffer() {
-    return 1 <= this.beginBuffer.length;
-  }
-
-  hasEndBuffer() {
-    return 1 <= this.endBuffer.length;
-  }
-
-  process() {
+  _process() {
     while (this.buffer.length) {
-      if (!this.processLine(this.t, this.buffer.shift())) {
+      if (!this._processLine(this.t, this.buffer.shift())) {
         // Need to wait next data
         break;
       }
     }
   }
 
-  processLine(t, line) {
+  _processLine(t, line) {
     let result = line;
     // If pendingPatterns are not empty,
     // it means that the first pattern need more lines.
@@ -119,7 +119,7 @@ export default class Translator extends Transform {
           return false;
         }
       }
-      result = this.applyToResolved(result, p, p.pattern, p.exclude, p.flags);
+      result = this._applyToResolved(result, p, p.pattern, p.exclude, p.flags);
       if (p.insert && p.insert.resolved) {
         if (p.insert.at === INSERT_AT_BEGIN) {
           if (this.beginBuffer.indexOf(p.insert.resolved) < 0) {
@@ -176,7 +176,7 @@ export default class Translator extends Transform {
     return true;
   }
 
-  applyToResolved(target, obj, pattern, exclude, flags) {
+  _applyToResolved(target, obj, pattern, exclude, flags) {
     let resolved = obj.resolved;
     if (obj.args) {
       for (let i = 0; i < obj.args.length; i++) {
@@ -184,7 +184,7 @@ export default class Translator extends Transform {
         if (argResolved) {
           if (argResolved.replace && typeof argResolved.replace !== 'function') {
             if (argResolved.resolved) {
-              resolved = this.applyToArgResolved(resolved, argResolved, `{${i}}`);
+              resolved = this._applyToArgResolved(resolved, argResolved, `{${i}}`);
             } else {
               resolved = resolved.replace(new RegExp(`\\{${i}\\}`, 'g'), argResolved.replace);
             }
@@ -204,12 +204,12 @@ export default class Translator extends Transform {
     return result;
   }
 
-  applyToArgResolved(target, obj, pattern) {
+  _applyToArgResolved(target, obj, pattern) {
     if (obj.args) {
       for (let i = 0; i < obj.args.length; i++) {
         let argResolved = obj.argsResolved[i];
         if (argResolved) {
-          obj.resolved = this.applyToArgResolved(obj.resolved, argResolved, `{${i}}`);
+          obj.resolved = this._applyToArgResolved(obj.resolved, argResolved, `{${i}}`);
         } else {
           obj.resolved = obj.resolved.replace(`{${i}}`, obj.args[i]);
         }
