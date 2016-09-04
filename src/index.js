@@ -4,12 +4,10 @@ import path from 'path';
 import fs from 'fs-extra';
 import glob from 'glob';
 import 'babel-polyfill';
-import Camelizer from './camelizer';
+import Config from './config';
 import Translator from './translator';
 const async = require('async');
-const yaml = require('js-yaml');
 const temp = require('temp').track();
-const pathExists = require('path-exists');
 const clone = require('clone');
 const prettyHrtime = require('pretty-hrtime');
 
@@ -33,13 +31,12 @@ export default class I18nPatch {
   generate(config, localeConfig) {
     return new Promise((resolve, reject) => {
       try {
-        this.setConfigs(config, localeConfig);
+        this.config = new Config(this.options, config, localeConfig);
       } catch (err) {
         reject(err);
       }
       this.buildPatterns();
       this.copySrc();
-      this.setTranslationIds();
       async.series(this.processTranslations(), (err) => err ? reject(err) : resolve());
     });
   }
@@ -54,42 +51,12 @@ export default class I18nPatch {
     return this.src !== this.options.dest;
   }
 
-  setTranslationIds() {
-    for (let i = 0; i < this.config.translations.length; i++) {
-      this.config.translations[i].id = i + 1;
-    }
-  }
-
-  setConfigs(config, localeConfig) {
-    this.config = config || this.readConfigFile('i18n');
-    if (localeConfig) {
-      this.localeConfig = localeConfig;
-    } else {
-      if (!this.options.locale) {
-        throw new Error('Could not determine locale');
-      }
-      this.localeConfig = this.readConfigFile(this.options.locale);
-    }
-
-    new Camelizer().camelize(this.config.translations);
-  }
-
-  readConfigFile(name) {
-    let configPath = path.join(this.options.config, `${name}.yml`);
-    if (pathExists.sync(configPath)) {
-      return yaml.load(fs.readFileSync(configPath, ENCODING), {filename: configPath});
-    } else {
-      configPath = path.join(this.options.config, `${name}.json`);
-      return JSON.parse(fs.readFileSync(configPath));
-    }
-  }
-
   buildPatterns() {
-    for (let t of this.config.translations) {
+    for (let t of this.config.config.translations) {
       t.statistics = {files: 0, patterns: 0};
       this.buildConditionals(t);
       if (t.add) {
-        t.add.resolved = this.localeConfig[t.add.value];
+        t.add.resolved = this.config.localeConfig[t.add.value];
         continue;
       }
       this.buildPatternsForTranslation(t);
@@ -103,10 +70,10 @@ export default class I18nPatch {
       return;
     }
     for (let c of t.conditionals) {
-      if (!c.insert || !this.hasTranslationKey(c.insert.value)) {
+      if (!c.insert || !this.config.hasTranslationKey(c.insert.value)) {
         continue;
       }
-      c.insert.resolved = this.localeConfig[c.insert.value];
+      c.insert.resolved = this.config.localeConfig[c.insert.value];
       if (c.insert.resolved && !c.insert.resolved.endsWith(NEWLINE)) {
         c.insert.resolved += NEWLINE;
       }
@@ -214,8 +181,8 @@ export default class I18nPatch {
 
   resolvePattern(p) {
     this.resolve(p);
-    if (p.insert && this.hasTranslationKey(p.insert.value)) {
-      p.insert.resolved = this.localeConfig[p.insert.value];
+    if (p.insert && this.config.hasTranslationKey(p.insert.value)) {
+      p.insert.resolved = this.config.localeConfig[p.insert.value];
       if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
         p.insert.resolved += NEWLINE;
       }
@@ -407,19 +374,15 @@ export default class I18nPatch {
     }
   }
 
-  hasTranslationKey(key) {
-    return this.localeConfig.hasOwnProperty(key);
-  }
-
   resolveTranslationKey(target, returnOriginalIfTranslationMissing) {
     let resolved = false;
     let variableDefined = false;
     let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
       variableDefined = true;
-      if (this.hasTranslationKey(matched)) {
+      if (this.config.hasTranslationKey(matched)) {
         resolved = true;
       }
-      return this.localeConfig[matched];
+      return this.config.localeConfig[matched];
     });
     if (!resolved) {
       if (returnOriginalIfTranslationMissing && !variableDefined) {
@@ -445,29 +408,29 @@ export default class I18nPatch {
   createParallelGroups() {
     let parallelGroups = [];
     let done = [];
-    for (let i = 0; i < this.config.translations.length; i++) {
+    for (let i = 0; i < this.config.config.translations.length; i++) {
       done.push(false);
     }
-    for (let i = 0; i < this.config.translations.length; i++) {
+    for (let i = 0; i < this.config.config.translations.length; i++) {
       if (done[i]) {
         continue;
       }
-      if (this.config.translations[i].hasOwnProperty('parallelGroup')) {
+      if (this.config.config.translations[i].hasOwnProperty('parallelGroup')) {
         // Search the same translation in rest of the translations
-        let parallelGroupId = this.config.translations[i].parallelGroup;
-        let group = [this.config.translations[i]];
-        for (let j = i + 1; j < this.config.translations.length; j++) {
-          if (this.config.translations[j].hasOwnProperty('parallelGroup')) {
-            let parallelGroupId2 = this.config.translations[j].parallelGroup;
+        let parallelGroupId = this.config.config.translations[i].parallelGroup;
+        let group = [this.config.config.translations[i]];
+        for (let j = i + 1; j < this.config.config.translations.length; j++) {
+          if (this.config.config.translations[j].hasOwnProperty('parallelGroup')) {
+            let parallelGroupId2 = this.config.config.translations[j].parallelGroup;
             if (parallelGroupId === parallelGroupId2) {
-              group.push(this.config.translations[j]);
+              group.push(this.config.config.translations[j]);
               done[j] = true;
             }
           }
         }
         parallelGroups.push(group);
       } else {
-        parallelGroups.push([this.config.translations[i]]);
+        parallelGroups.push([this.config.config.translations[i]]);
       }
       done[i] = true;
     }
