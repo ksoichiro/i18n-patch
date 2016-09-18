@@ -5,6 +5,7 @@ import I18nPatch from '../src';
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
+import sinon from 'sinon';
 
 test.before(() => {
   temp.track();
@@ -235,4 +236,30 @@ test('_resolveNamedPattern with namedPattern that one of the params is not given
     {pattern: '"foo"', exclude: '^#', replace: '"{foo} {bar}"', params: ['foo', 'bar'], args: []},
     {foo: 'baz'});
   t.is(JSON.stringify(result), JSON.stringify({pattern: '"foo"', exclude: '^#', replace: '"baz {bar}"', args: []}));
+});
+
+test.cb('_processFilePerLine throws an error', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let config = {
+    "translations": [
+      {
+        "patterns": []
+      }
+    ]
+  };
+  let localeConfig = {};
+  let i = new I18nPatch('../example/src', { dest: tempDir })
+  sinon.stub(i, '_processFilePerLine', function(tr, file) {
+    return new Promise((resolve, reject) => {
+      reject('This is a stub');
+    });
+  });
+  t.plan(1);
+  i.generate(config, localeConfig)
+  .catch((err) => {
+    t.ok(err);
+  }).then(() => {
+    i._processFilePerLine.restore();
+    t.end();
+  });
 });

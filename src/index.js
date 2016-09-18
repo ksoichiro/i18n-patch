@@ -250,8 +250,7 @@ export default class I18nPatch {
     glob(path.join(this.options.dest, src), {nodir: true}, (err, files) => {
       async.eachLimit(files, 100, (file, cb) => {
         this._processFile(t, file)
-        .catch((err) => cb(err))
-        .then(() => cb());
+        .then(() => cb(), (err) => cb(err));
       }, (err) => err ? reject(err) : resolve());
     });
   }
@@ -260,7 +259,6 @@ export default class I18nPatch {
     return new Promise((resolve, reject) => {
       t.statistics.files++;
       this._processFilePerLine(t, file)
-      .catch((err) => reject(err))
       .then((file) => {
         if (this._hasPerFilePattern(t)) {
           this._processFilePerFile(t, file);
@@ -268,7 +266,7 @@ export default class I18nPatch {
         } else {
           resolve(file);
         }
-      });
+      }, (err) => reject(err));
     });
   }
 

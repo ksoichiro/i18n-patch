@@ -52,7 +52,8 @@
     "cross-env": "^1.0.7",
     "eslint": "^2.5.3",
     "nyc": "^6.4.0",
-    "rimraf": "^2.5.2"
+    "rimraf": "^2.5.2",
+    "sinon": "^1.17.5"
   },
   "babel": {
     "presets": [
