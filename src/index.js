@@ -298,9 +298,7 @@ export default class I18nPatch {
       let value = '';
       for (let e of translator.beginBuffer) {
         value += e;
-        if (!e.endsWith(NEWLINE)) {
-          value += NEWLINE;
-        }
+        value = this._appendNewlineWithExpression(value, e);
       }
       let content = fs.readFileSync(file, ENCODING);
       fs.writeFileSync(file, value + content, ENCODING);
@@ -309,14 +307,10 @@ export default class I18nPatch {
       let value = '';
       for (let e of translator.endBuffer) {
         value += e;
-        if (!e.endsWith(NEWLINE)) {
-          value += NEWLINE;
-        }
+        value = this._appendNewlineWithExpression(value, e);
       }
       let content = fs.readFileSync(file, ENCODING);
-      if (!content.endsWith(NEWLINE)) {
-        content += NEWLINE;
-      }
+      content = this._appendNewline(content);
       fs.writeFileSync(file, content + value, ENCODING);
     }
   }
@@ -328,17 +322,13 @@ export default class I18nPatch {
       }
       let at = p.insert.at;
       let value = p.insert.resolved;
-      if (!value.endsWith(NEWLINE)) {
-        value += NEWLINE;
-      }
+      value = this._appendNewline(value);
       if (at === INSERT_AT_BEGIN) {
         let content = fs.readFileSync(file, ENCODING);
         fs.writeFileSync(file, value + content, ENCODING);
       } else if (at === INSERT_AT_END) {
         let content = fs.readFileSync(file, ENCODING);
-        if (!content.endsWith(NEWLINE)) {
-          content += NEWLINE;
-        }
+        content = this._appendNewline(content);
         fs.writeFileSync(file, content + value, ENCODING);
       }
     }
@@ -447,6 +437,17 @@ export default class I18nPatch {
     }), (err) => {
       cb(err);
     });
+  }
+
+  _appendNewline(value) {
+    return this._appendNewlineWithExpression(value, value);
+  }
+
+  _appendNewlineWithExpression(value, e) {
+    if (!e.endsWith(NEWLINE)) {
+      value += NEWLINE;
+    }
+    return value;
   }
 
   _showStatistics(t) {

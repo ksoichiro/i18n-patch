@@ -263,3 +263,24 @@ test.cb('_processFilePerLine throws an error', t => {
     t.end();
   });
 });
+
+test('append newline', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let i = new I18nPatch('../example/src', { dest: tempDir })
+  let value;
+
+  value = 'foo';
+  value = i._appendNewlineWithExpression(value, 'bar');
+  t.is(value, 'foo\n');
+
+  value = 'foo';
+  value = i._appendNewlineWithExpression(value, 'bar\n');
+  t.is(value, 'foo');
+
+  value = 'foo';
+  value = i._appendNewline(value);
+  t.is(value, 'foo\n');
+  // Newline won't be appended twice
+  value = i._appendNewline(value);
+  t.is(value, 'foo\n');
+});
