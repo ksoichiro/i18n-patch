@@ -245,10 +245,6 @@ export default class I18nPatch {
       return;
     }
     glob(path.join(this.options.dest, src), {nodir: true}, (err, files) => {
-      if (err) {
-        reject(err);
-        return;
-      }
       async.eachLimit(files, 100, (file, cb) => {
         this._processFile(t, file)
         .catch((err) => cb(err))
