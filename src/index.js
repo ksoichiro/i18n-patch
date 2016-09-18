@@ -260,9 +260,8 @@ export default class I18nPatch {
       .catch((err) => reject(err))
       .then((file) => {
         if (this._hasPerFilePattern(t)) {
-          this._processFilePerFile(t, file)
-          .catch((err) => reject(err))
-          .then((file) => resolve(file));
+          this._processFilePerFile(t, file);
+          resolve(file);
         } else {
           resolve(file);
         }
@@ -322,33 +321,26 @@ export default class I18nPatch {
   }
 
   _processFilePerFile(t, file) {
-    return new Promise((resolve, reject) => {
-      try {
-        for (let p of t.patterns) {
-          if (p.pattern || !p.insert || !p.insert.resolved) {
-            continue;
-          }
-          let at = p.insert.at;
-          let value = p.insert.resolved;
-          if (!value.endsWith(NEWLINE)) {
-            value += NEWLINE;
-          }
-          if (at === INSERT_AT_BEGIN) {
-            let content = fs.readFileSync(file, ENCODING);
-            fs.writeFileSync(file, value + content, ENCODING);
-          } else if (at === INSERT_AT_END) {
-            let content = fs.readFileSync(file, ENCODING);
-            if (!content.endsWith(NEWLINE)) {
-              content += NEWLINE;
-            }
-            fs.writeFileSync(file, content + value, ENCODING);
-          }
-        }
-        resolve();
-      } catch (err) {
-        reject(err);
+    for (let p of t.patterns) {
+      if (p.pattern || !p.insert || !p.insert.resolved) {
+        continue;
       }
-    });
+      let at = p.insert.at;
+      let value = p.insert.resolved;
+      if (!value.endsWith(NEWLINE)) {
+        value += NEWLINE;
+      }
+      if (at === INSERT_AT_BEGIN) {
+        let content = fs.readFileSync(file, ENCODING);
+        fs.writeFileSync(file, value + content, ENCODING);
+      } else if (at === INSERT_AT_END) {
+        let content = fs.readFileSync(file, ENCODING);
+        if (!content.endsWith(NEWLINE)) {
+          content += NEWLINE;
+        }
+        fs.writeFileSync(file, content + value, ENCODING);
+      }
+    }
   }
 
   _hasPerFilePattern(t) {
