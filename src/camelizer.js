@@ -4,20 +4,7 @@ const camelCase = require('camelcase');
 
 export default class Camelizer {
   camelize(obj) {
-    if (!obj) {
-      return;
-    }
-    if (typeof obj === 'object') {
-      this._camelizeObject(obj);
-    } else if (obj instanceof Array) {
-      for (let elem of obj) {
-        this._camelizeObject(elem);
-      }
-    }
-  }
-
-  _camelizeObject(obj) {
-    if (!obj) {
+    if (!this.acceptable(obj)) {
       return;
     }
     Object.keys(obj).forEach((key) => {
@@ -28,5 +15,12 @@ export default class Camelizer {
       }
       this.camelize(obj[converted]);
     });
+  }
+  acceptable(obj) {
+    if (obj === undefined || obj === null) {
+      return false;
+    }
+    let clas = Object.prototype.toString.call(obj).slice(8, -1);
+    return clas === 'Object' || clas === 'Array';
   }
 }
