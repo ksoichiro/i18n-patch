@@ -173,3 +173,15 @@ test('exception is thrown when locale is not specified', t => {
     t.ok(err);
   });
 });
+
+test('copy src only when it has destination', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let opts = {
+    config: '../example',
+    dest: tempDir
+  };
+  let i = new I18nPatch(tempDir, opts);
+  t.is(i._hasDest(), false);
+  i._copySrc();
+  t.pass();
+});
