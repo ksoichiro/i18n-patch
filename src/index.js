@@ -239,7 +239,12 @@ export default class I18nPatch {
   }
 
   _processTranslationsForMatchingFiles(t, resolve, reject) {
-    glob(path.join(this.options.dest, t.src || '**/*'), {nodir: true}, (err, files) => {
+    let src = t.src || '**/*';
+    if (!this._isString(src)) {
+      reject(`translation.src must be a string: ${JSON.stringify(t.src)}`);
+      return;
+    }
+    glob(path.join(this.options.dest, src), {nodir: true}, (err, files) => {
       if (err) {
         reject(err);
         return;
@@ -440,12 +445,11 @@ export default class I18nPatch {
   _processTranslationForGroup(t, cb) {
     let startTime = process.hrtime();
     this._processTranslation(t)
-    .catch((err) => cb(err))
     .then(() => {
       t.statistics.time = process.hrtime(startTime);
       this._showStatistics(t);
       cb();
-    });
+    }, (err) => cb(err));
   }
 
   _processTranslationForGroupsInParallel(parallelGroup, cb) {

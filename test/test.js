@@ -185,3 +185,22 @@ test('copy src only when it has destination', t => {
   i._copySrc();
   t.pass();
 });
+
+test('exception is thrown when an object is specified to src in translation', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let config = {
+    "translations": [
+      {
+        "src": {},
+        "patterns": []
+      }
+    ]
+  };
+  let localeConfig = {};
+  t.plan(1);
+  return new I18nPatch('../example/src', { dest: tempDir })
+  .generate(config, localeConfig)
+  .catch((err) => {
+    t.ok(err);
+  });
+});
