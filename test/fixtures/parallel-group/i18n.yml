@@ -1,0 +1,16 @@
+translations:
+- src: 'a/*.js'
+  parallel-group: 'group1'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+- src: 'b/*.js'
+  parallel-group: 'group1'
+  patterns:
+  - pattern: 'bar'
+    replace: '${bar}'
+- src: 'a/test-*.js'
+  parallel-group: 'group2'
+  patterns:
+  - pattern: 'baz'
+    replace: '${baz}'
