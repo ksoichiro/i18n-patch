@@ -204,3 +204,35 @@ test('exception is thrown when an object is specified to src in translation', t 
     t.ok(err);
   });
 });
+
+test('_findPatterns return null when the named pattern is not found', t => {
+  let i = new I18nPatch('../example/src');
+  let result = i._findNamedPattern({namedPatterns: [{name: 'foo'}]}, {name: 'bar'});
+  t.is(result, null);
+});
+
+test('_buildNamedPatternWithParams handles RegExp without flags when namedPattern does not have flags', t => {
+  let i = new I18nPatch('../example/src');
+  let result = i._buildNamedPatternWithParams(
+    {pattern: '"foo"', exclude: '^#', replace: '"{foo}"', params: [], args: []},
+    {foo: 'bar'});
+  t.is(result.exclude.global, false);
+  t.is(result.exclude.ignoreCase, false);
+  t.is(result.exclude.multiline, false);
+});
+
+test('_resolveNamedPattern with namedPattern without params', t => {
+  let i = new I18nPatch('../example/src');
+  let result = i._resolveNamedPattern(
+    {pattern: '"foo"', exclude: '^#', replace: '"{foo}"', args: []},
+    {foo: 'bar'});
+  t.is(JSON.stringify(result), JSON.stringify({pattern: '"foo"', exclude: '^#', replace: '"{foo}"', args: []}));
+});
+
+test('_resolveNamedPattern with namedPattern that one of the params is not given', t => {
+  let i = new I18nPatch('../example/src');
+  let result = i._resolveNamedPattern(
+    {pattern: '"foo"', exclude: '^#', replace: '"{foo} {bar}"', params: ['foo', 'bar'], args: []},
+    {foo: 'baz'});
+  t.is(JSON.stringify(result), JSON.stringify({pattern: '"foo"', exclude: '^#', replace: '"baz {bar}"', args: []}));
+});

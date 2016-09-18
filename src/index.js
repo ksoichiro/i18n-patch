@@ -146,6 +146,9 @@ export default class I18nPatch {
       replace: namedPattern.replace,
       args: clone(namedPattern.args)
     };
+    if (!namedPattern.hasOwnProperty('params')) {
+      return np;
+    }
     for (let npp of namedPattern.params) {
       if (!params.hasOwnProperty(npp)) {
         continue;
