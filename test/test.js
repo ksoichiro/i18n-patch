@@ -302,3 +302,21 @@ test('append newline', t => {
   value = i._appendNewline(value);
   t.is(value, 'foo\n');
 });
+
+test('_shouldQuitForThisLocale returns false if the locale matches locale.include', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let i = new I18nPatch('../example/src', { dest: tempDir, locale: 'ja' })
+  t.is(i._shouldQuitForThisLocale({locale: {include: ['en', 'ja']}}), false);
+});
+
+test('_shouldQuitForThisLocale returns true if the locale matches locale.exclude', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let i = new I18nPatch('../example/src', { dest: tempDir, locale: 'ja' })
+  t.is(i._shouldQuitForThisLocale({locale: {exclude: ['en', 'ja']}}), true);
+});
+
+test('_shouldQuitForThisLocale returns false if both locale.include and locale.exclude is undefined', t => {
+  let tempDir = temp.mkdirSync('foo');
+  let i = new I18nPatch('../example/src', { dest: tempDir, locale: 'ja' })
+  t.is(i._shouldQuitForThisLocale({locale: {}}), false);
+});
