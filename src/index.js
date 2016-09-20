@@ -93,18 +93,17 @@ export default class I18nPatch {
       patterns.push(p);
       return;
     }
-    let added = false;
     let namedPattern = this._findNamedPattern(t, p);
     if (!namedPattern) {
       patterns.push(p);
       return;
     }
-    let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
-    for (let params of paramsSet) {
-      patterns.push(this._buildNamedPatternWithParams(namedPattern, params));
-      added = true;
-    }
-    if (!added) {
+    if (p.hasOwnProperty('params')) {
+      let paramsSet = Array.isArray(p.params) ? p.params : [p.params];
+      for (let params of paramsSet) {
+        patterns.push(this._buildNamedPatternWithParams(namedPattern, params));
+      }
+    } else {
       patterns.push(p);
     }
   }

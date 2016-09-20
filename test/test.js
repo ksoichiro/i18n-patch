@@ -206,6 +206,24 @@ test('exception is thrown when an object is specified to src in translation', t 
   });
 });
 
+test('_buildOnePatternForTranslation returns pattern if namedPattern not found', t => {
+  let i = new I18nPatch('../example/src');
+  let patterns = [];
+  let p = {name: 'bar'};
+  i._buildOnePatternForTranslation({namedPatterns: [{name: 'foo'}]}, p, patterns)
+  t.is(patterns.length, 1);
+  t.is(JSON.stringify(patterns[0]), JSON.stringify(p));
+});
+
+test('_buildOnePatternForTranslation returns pattern anyway if namedPattern is found and pattern not have param', t => {
+  let i = new I18nPatch('../example/src');
+  let patterns = [];
+  let p = {name: 'foo'};
+  i._buildOnePatternForTranslation({namedPatterns: [{name: 'foo'}]}, p, patterns)
+  t.is(patterns.length, 1);
+  t.is(JSON.stringify(patterns[0]), JSON.stringify(p));
+});
+
 test('_findPatterns return null when the named pattern is not found', t => {
   let i = new I18nPatch('../example/src');
   let result = i._findNamedPattern({namedPatterns: [{name: 'foo'}]}, {name: 'bar'});
