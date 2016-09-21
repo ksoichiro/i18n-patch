@@ -28,12 +28,12 @@ export default class Translator extends Transform {
   }
 
   _transform(chunk, encoding, done) {
-    var data = chunk.toString();
+    let data = chunk.toString();
     if (this.lastLineData) {
       data = this.lastLineData + data;
     }
 
-    var lines = data.split(NEWLINE);
+    let lines = data.split(NEWLINE);
     this.lastLineData = lines.splice(lines.length - 1, 1)[0];
     lines.forEach(function(line) {
       this.buffer.push(line);
