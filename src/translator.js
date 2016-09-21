@@ -64,24 +64,8 @@ export default class Translator extends Transform {
 
   _processLine(t, line) {
     let result = line;
-    // If pendingPatterns are not empty,
-    // it means that the first pattern need more lines.
-    if (0 === this.pendingPatterns.length) {
-      if (t.skipPatterns) {
-        // This line should be skipped:
-        // no need to check if it matches t.patterns.
-        for (let skipPattern of t.skipPatterns) {
-          if (result.match(skipPattern)) {
-            this.push(result + NEWLINE);
-            return true;
-          }
-        }
-      }
-      t.patterns.forEach((p) => {
-        if (!p.matchOnce || !p.matched) {
-          this.pendingPatterns.push(p);
-        }
-      });
+    if (this._shouldSkipLine(t, result)) {
+      return true;
     }
     while (this.pendingPatterns.length) {
       let p = this.pendingPatterns.shift();
@@ -91,12 +75,7 @@ export default class Translator extends Transform {
       let before = result;
       let beforeMultiline = before;
       let patternSource = p.pattern instanceof RegExp ? p.pattern.source : p.pattern;
-      let patternLines = patternSource
-        // Usually the pattern includes ([^\n]*) to express a line
-        // in multiline expression, so this should be removed
-        // to know how many lines this pattern requires.
-        .replace('[^\\n]', '')
-        .split('\\n').length;
+      let patternLines = this._getNumOfLinesInPattern(patternSource);
       let consumedBuffers = 0;
       if (1 < patternLines) {
         let currentLines = result.split(NEWLINE).length;
@@ -120,17 +99,7 @@ export default class Translator extends Transform {
         }
       }
       result = this._applyToResolved(result, p, p.pattern, p.exclude, p.flags);
-      if (p.insert && p.insert.resolved) {
-        if (p.insert.at === INSERT_AT_BEGIN) {
-          if (this.beginBuffer.indexOf(p.insert.resolved) < 0) {
-            this.beginBuffer.push(p.insert.resolved);
-          }
-        } else if (p.insert.at === INSERT_AT_END) {
-          if (this.endBuffer.indexOf(p.insert.resolved) < 0) {
-            this.endBuffer.push(p.insert.resolved);
-          }
-        }
-      }
+      this._insertExpressionAtBeginOrEnd(p);
       if (beforeMultiline === result) {
         // result might include the next lines to look-ahead,
         // but the next pattern should process the first line of the result.
@@ -152,18 +121,7 @@ export default class Translator extends Transform {
       }
       if (t.conditionals) {
         for (let c of t.conditionals) {
-          if (!c.insert || !c.insert.resolved) {
-            continue;
-          }
-          if (c.insert.at === INSERT_AT_BEGIN) {
-            if (this.beginBuffer.indexOf(c.insert.resolved) < 0) {
-              this.beginBuffer.push(c.insert.resolved);
-            }
-          } else if (c.insert.at === INSERT_AT_END) {
-            if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
-              this.endBuffer.push(c.insert.resolved);
-            }
-          }
+          this._insertExpressionAtBeginOrEnd(c);
         }
       }
       if (p.completePattern) {
@@ -174,6 +132,52 @@ export default class Translator extends Transform {
     // TODO Preserve original newline if possible
     this.push(result + NEWLINE);
     return true;
+  }
+
+  _shouldSkipLine(t, result) {
+    // If pendingPatterns are not empty,
+    // it means that the first pattern need more lines.
+    if (0 !== this.pendingPatterns.length) {
+      return false;
+    }
+    if (t.skipPatterns) {
+      for (let skipPattern of t.skipPatterns) {
+        if (result.match(skipPattern)) {
+          // This line should be skipped:
+          // no need to check if it matches t.patterns.
+          this.push(result + NEWLINE);
+          return true;
+        }
+      }
+    }
+    t.patterns.forEach((p) => {
+      if (!p.matchOnce || !p.matched) {
+        this.pendingPatterns.push(p);
+      }
+    });
+    return false;
+  }
+
+  _getNumOfLinesInPattern(src) {
+    // Usually the pattern includes ([^\n]*) to express a line
+    // in multiline expression, so this should be removed
+    // to know how many lines this pattern requires.
+    return src.replace('[^\\n]', '').split('\\n').length;
+  }
+
+  _insertExpressionAtBeginOrEnd(c) {
+    if (!c.insert || !c.insert.resolved) {
+      return;
+    }
+    if (c.insert.at === INSERT_AT_BEGIN) {
+      if (this.beginBuffer.indexOf(c.insert.resolved) < 0) {
+        this.beginBuffer.push(c.insert.resolved);
+      }
+    } else if (c.insert.at === INSERT_AT_END) {
+      if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
+        this.endBuffer.push(c.insert.resolved);
+      }
+    }
   }
 
   _applyToResolved(target, obj, pattern, exclude, flags) {
