@@ -69,13 +69,9 @@ export default class Translator extends Transform {
     }
     while (this.pendingPatterns.length) {
       let p = this.pendingPatterns.shift();
-      if (!p.resolved) {
-        continue;
-      }
       let before = result;
       let beforeMultiline = before;
-      let patternSource = p.pattern instanceof RegExp ? p.pattern.source : p.pattern;
-      let patternLines = this._getNumOfLinesInPattern(patternSource);
+      let patternLines = this._getNumOfLinesInPattern(p.pattern);
       let consumedBuffers = 0;
       if (1 < patternLines) {
         let currentLines = result.split(NEWLINE).length;
@@ -108,12 +104,7 @@ export default class Translator extends Transform {
         result = before;
         continue;
       }
-      // We should consume looked-ahead buffers only when they match the pattern.
-      if (0 < consumedBuffers) {
-        for (let i = consumedBuffers; 0 < i; i--) {
-          this.buffer.shift();
-        }
-      }
+      this._consumeLookedAheadBuffers(consumedBuffers);
       this.matched = true;
       if (p.matchOnce) {
         // Mark as matched to skip this pattern next time
@@ -129,9 +120,13 @@ export default class Translator extends Transform {
         break;
       }
     }
+    this._pushLines(result);
+    return true;
+  }
+
+  _pushLines(result) {
     // TODO Preserve original newline if possible
     this.push(result + NEWLINE);
-    return true;
   }
 
   _shouldSkipLine(t, result) {
@@ -145,24 +140,27 @@ export default class Translator extends Transform {
         if (result.match(skipPattern)) {
           // This line should be skipped:
           // no need to check if it matches t.patterns.
-          this.push(result + NEWLINE);
+          this._pushLines(result);
           return true;
         }
       }
     }
     t.patterns.forEach((p) => {
       if (!p.matchOnce || !p.matched) {
-        this.pendingPatterns.push(p);
+        if (p.hasOwnProperty('resolved') && p.resolved) {
+          this.pendingPatterns.push(p);
+        }
       }
     });
     return false;
   }
 
-  _getNumOfLinesInPattern(src) {
+  _getNumOfLinesInPattern(pattern) {
+    let patternSource = pattern instanceof RegExp ? pattern.source : pattern;
     // Usually the pattern includes ([^\n]*) to express a line
     // in multiline expression, so this should be removed
     // to know how many lines this pattern requires.
-    return src.replace('[^\\n]', '').split('\\n').length;
+    return patternSource.replace('[^\\n]', '').split('\\n').length;
   }
 
   _insertExpressionAtBeginOrEnd(c) {
@@ -176,6 +174,15 @@ export default class Translator extends Transform {
     } else if (c.insert.at === INSERT_AT_END) {
       if (this.endBuffer.indexOf(c.insert.resolved) < 0) {
         this.endBuffer.push(c.insert.resolved);
+      }
+    }
+  }
+
+  _consumeLookedAheadBuffers(consumedBuffers) {
+    // We should consume looked-ahead buffers only when they match the pattern.
+    if (0 < consumedBuffers) {
+      for (let i = consumedBuffers; 0 < i; i--) {
+        this.buffer.shift();
       }
     }
   }
