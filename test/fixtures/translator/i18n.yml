@@ -1,0 +1,5 @@
+translations:
+- src: '**/*.md'
+  patterns:
+  - pattern: 'lorem'
+    replace: '${lorem}'

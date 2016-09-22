@@ -50,6 +50,11 @@ console.log('bar');
 appended.code(2);
 console.log('ok');
 `);
+    // File with noeol
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'js/noeol.js'), 'utf8'),
+      `// foo
+// bar`);
     // Codes are inserted at the beginning of the file, when matched to the pattern
     t.is(
       fs.readFileSync(path.join(tempDir, 'app/foo.rb'), 'utf8'),
