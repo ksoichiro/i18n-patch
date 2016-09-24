@@ -43,6 +43,11 @@ export default class Translator extends Transform {
   }
 
   _flush(done) {
+    if (this.matched && this.t.conditionals) {
+      for (let c of this.t.conditionals) {
+        this._insertExpressionAtBeginOrEnd(c);
+      }
+    }
     if (this.lastLineData) {
       this.buffer.push(this.lastLineData);
     }
@@ -67,20 +72,25 @@ export default class Translator extends Transform {
     if (this._shouldSkipLine(t, result)) {
       return true;
     }
+    Array.prototype.push.apply(this.pendingPatterns, t.resolvedPatterns);
     while (this.pendingPatterns.length) {
       let p = this.pendingPatterns.shift();
+      if (p.matchOnce && p.matched) {
+        continue;
+      }
       let before = result;
       let beforeMultiline = before;
       let patternLines = this._getNumOfLinesInPattern(p.pattern);
       let consumedBuffers = 0;
       if (1 < patternLines) {
-        let currentLines = result.split(NEWLINE).length;
-        if (patternLines - currentLines <= this.buffer.length) {
-          for (let i = 0; i < patternLines - currentLines; i++) {
+        let requiredLines = patternLines - result.split(NEWLINE).length;
+        if (requiredLines <= this.buffer.length) {
+          let i;
+          for (i = 0; i < requiredLines; i++) {
             result += NEWLINE + this.buffer[i];
-            beforeMultiline = result;
-            consumedBuffers++;
           }
+          beforeMultiline = result;
+          consumedBuffers = i;
         } else if (this.inputEnd) {
           // We should give up this pattern to be matched
           // because there's no more data to read.
@@ -109,11 +119,6 @@ export default class Translator extends Transform {
       if (p.matchOnce) {
         // Mark as matched to skip this pattern next time
         p.matched = true;
-      }
-      if (t.conditionals) {
-        for (let c of t.conditionals) {
-          this._insertExpressionAtBeginOrEnd(c);
-        }
       }
       if (p.completePattern) {
         this.pendingPatterns = [];
@@ -145,26 +150,22 @@ export default class Translator extends Transform {
         }
       }
     }
-    t.patterns.forEach((p) => {
-      if (!p.matchOnce || !p.matched) {
-        if (p.hasOwnProperty('resolved') && p.resolved) {
-          this.pendingPatterns.push(p);
-        }
-      }
-    });
     return false;
   }
 
   _getNumOfLinesInPattern(pattern) {
-    let patternSource = pattern instanceof RegExp ? pattern.source : pattern;
-    // Usually the pattern includes ([^\n]*) to express a line
-    // in multiline expression, so this should be removed
-    // to know how many lines this pattern requires.
-    return patternSource.replace('[^\\n]', '').split('\\n').length;
+    if (pattern instanceof RegExp) {
+      // Usually the pattern includes ([^\n]*) to express a line
+      // in multiline expression, so this should be removed
+      // to know how many lines this pattern requires.
+      return pattern.source.replace('[^\\n]', '').split('\\n').length;
+    } else {
+      return 1;
+    }
   }
 
   _insertExpressionAtBeginOrEnd(c) {
-    if (!c.insert || !c.insert.resolved) {
+    if (!c.hasOwnProperty('insert') || !c.insert || !c.insert.hasOwnProperty('resolved') || !c.insert.resolved) {
       return;
     }
     if (c.insert.at === INSERT_AT_BEGIN) {
@@ -188,8 +189,24 @@ export default class Translator extends Transform {
   }
 
   _applyToResolved(target, obj, pattern, exclude, flags) {
+    // Quit resolving and replacing if it doesn't match pattern
+    let exp = flags ? new RegExp(pattern, flags) : pattern;
+    if (exp instanceof RegExp) {
+      if (!exp.test(target)) {
+        return target;
+      }
+    } else {
+      if (target.indexOf(exp) < 0) {
+        return target;
+      }
+    }
+
+    if (exclude && target.match(exclude)) {
+      return target;
+    }
+
     let resolved = obj.resolved;
-    if (obj.args) {
+    if (obj.hasOwnProperty('args')) {
       for (let i = 0; i < obj.args.length; i++) {
         let argResolved = obj.argsResolved[i];
         if (argResolved) {
@@ -207,16 +224,11 @@ export default class Translator extends Transform {
         }
       }
     }
-    let exp = flags ? new RegExp(pattern, flags) : pattern;
-    let result = target.replace(exp, resolved);
-    if (exclude && result !== target && target.match(exclude)) {
-      return target;
-    }
-    return result;
+    return target.replace(exp, resolved);
   }
 
   _applyToArgResolved(target, obj, pattern) {
-    if (obj.args) {
+    if (obj.hasOwnProperty('args')) {
       for (let i = 0; i < obj.args.length; i++) {
         let argResolved = obj.argsResolved[i];
         if (argResolved) {

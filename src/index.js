@@ -176,18 +176,22 @@ export default class I18nPatch {
   }
 
   _resolvePatternsForTranslation(t) {
+    t.resolvedPatterns = [];
     for (let p of t.patterns) {
-      this._resolvePattern(p);
+      this._resolvePattern(t, p);
     }
   }
 
-  _resolvePattern(p) {
+  _resolvePattern(t, p) {
     this._resolve(p);
     if (p.insert && this.config.hasTranslationKey(p.insert.value)) {
       p.insert.resolved = this.config.localeConfig[p.insert.value];
       if (p.insert.resolved && !p.insert.resolved.endsWith(NEWLINE)) {
         p.insert.resolved += NEWLINE;
       }
+    }
+    if (p.hasOwnProperty('resolved') && p.resolved) {
+      t.resolvedPatterns.push(p);
     }
   }
 
