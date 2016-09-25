@@ -21,6 +21,6 @@ test('exception is thrown when the patterns are broken', t => {
   return new I18nPatch('./fixtures/broken', opts)
   .generate()
   .catch((err) => {
-    t.ok(err);
+    t.truthy(err);
   });
 });

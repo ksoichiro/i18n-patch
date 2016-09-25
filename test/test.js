@@ -144,7 +144,7 @@ test('exception is thrown when src is not given', t => {
 test('empty option is set when option is not given', t => {
   try {
     let i18nPatch = new I18nPatch('../example/src', null);
-    t.ok(i18nPatch.options);
+    t.truthy(i18nPatch.options);
     t.pass();
   } catch (err) {
     t.fail();
@@ -162,7 +162,7 @@ test('exception is thrown when config not found', t => {
   return new I18nPatch('../example/src', opts)
   .generate()
   .catch((err) => {
-    t.ok(err);
+    t.truthy(err);
   });
 });
 
@@ -176,7 +176,7 @@ test('exception is thrown when locale is not specified', t => {
   return new I18nPatch('../example/src', opts)
   .generate()
   .catch((err) => {
-    t.ok(err);
+    t.truthy(err);
   });
 });
 
@@ -207,7 +207,7 @@ test('exception is thrown when an object is specified to src in translation', t 
   return new I18nPatch('../example/src', { dest: tempDir })
   .generate(config, localeConfig)
   .catch((err) => {
-    t.ok(err);
+    t.truthy(err);
   });
 });
 
@@ -280,7 +280,7 @@ test.cb('_processFilePerLine throws an error', t => {
   t.plan(1);
   i.generate(config, localeConfig)
   .catch((err) => {
-    t.ok(err);
+    t.truthy(err);
   }).then(() => {
     i._processFilePerLine.restore();
     t.end();
