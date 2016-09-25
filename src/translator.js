@@ -17,6 +17,12 @@ export default class Translator extends Transform {
     this.endBuffer = [];
     this.pendingPatterns = [];
     this.inputEnd = false;
+
+    for (let p of this.t.resolvedPatterns) {
+      if (p.hasOwnProperty('resolved') && p.resolved) {
+        p.resolvedExpression = p.flags ? new RegExp(p.pattern, p.flags) : p.pattern;
+      }
+    }
   }
 
   hasBeginBuffer() {
@@ -43,6 +49,9 @@ export default class Translator extends Transform {
   }
 
   _flush(done) {
+    for (let p of this.t.resolvedPatterns) {
+      this._insertExpressionAtBeginOrEnd(p);
+    }
     if (this.matched && this.t.conditionals) {
       for (let c of this.t.conditionals) {
         this._insertExpressionAtBeginOrEnd(c);
@@ -104,8 +113,7 @@ export default class Translator extends Transform {
           return false;
         }
       }
-      result = this._applyToResolved(result, p, p.pattern, p.exclude, p.flags);
-      this._insertExpressionAtBeginOrEnd(p);
+      result = this._applyToResolved(result, p, p.resolvedExpression, p.exclude);
       if (beforeMultiline === result) {
         // result might include the next lines to look-ahead,
         // but the next pattern should process the first line of the result.
@@ -188,9 +196,8 @@ export default class Translator extends Transform {
     }
   }
 
-  _applyToResolved(target, obj, pattern, exclude, flags) {
+  _applyToResolved(target, obj, exp, exclude) {
     // Quit resolving and replacing if it doesn't match pattern
-    let exp = flags ? new RegExp(pattern, flags) : pattern;
     if (exp instanceof RegExp) {
       if (!exp.test(target)) {
         return target;
