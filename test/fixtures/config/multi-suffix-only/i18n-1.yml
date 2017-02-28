@@ -1,0 +1,5 @@
+translations:
+- src: '*.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'

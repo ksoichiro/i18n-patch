@@ -137,6 +137,7 @@ for providing i18n patch GitLab project without Git branch management.
 * [Match once](#match-once)
 * [Complete pattern](#complete-pattern)
 * [Parallel groups](#parallel-groups)
+* [Split files with suffix](#split-files-with-suffix)
 
 ### Basic
 
@@ -866,6 +867,51 @@ translations:
 ```
 
 With the above example, `foo` and `bar` will be processed in parallel because the same `parallel-group` value `group1` is given, and then `baz` will be processed.
+
+### Split files with suffix
+
+`i18n.yml` and `ja.yml` can be split into multiple files using suffix:
+
+```yaml
+# i18n.yml
+translations:
+- src: '*.md'
+  patterns:
+  - pattern: 'baz'
+    replace: '${baz}'
+
+# i18n-1.yml
+translations:
+- src: '*.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+
+# i18n-2.yml
+translations:
+- src: '*.html'
+  patterns:
+  - pattern: 'bar'
+    replace: '${bar}'
+```
+
+These files will be merged into a single configuration:
+
+```yaml
+translations:
+- src: '*.md'
+  patterns:
+  - pattern: 'baz'
+    replace: '${baz}'
+- src: '*.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+- src: '*.html'
+  patterns:
+  - pattern: 'bar'
+    replace: '${bar}'
+```
 
 ## License
 

@@ -38,6 +38,7 @@
     "fs-extra": "^0.26.7",
     "glob": "^7.0.3",
     "js-yaml": "^3.5.5",
+    "lodash": "^4.17.4",
     "meow": "^3.7.0",
     "path-exists": "^2.1.0",
     "pretty-hrtime": "^1.0.2",
