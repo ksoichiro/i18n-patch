@@ -1,0 +1,13 @@
+{
+  "translations": [
+    {
+      "src": "*.html",
+      "patterns": [
+        {
+          "pattern": "bar",
+          "replace": "${bar}"
+        }
+      ]
+    }
+  ]
+}
