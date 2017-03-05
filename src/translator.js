@@ -41,9 +41,7 @@ export default class Translator extends Transform {
 
     let lines = data.split(NEWLINE);
     this.lastLineData = lines.splice(lines.length - 1, 1)[0];
-    lines.forEach(function(line) {
-      this.buffer.push(line);
-    }.bind(this));
+    Array.prototype.push.apply(this.buffer, lines);
     this._process();
     done();
   }
