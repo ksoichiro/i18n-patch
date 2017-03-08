@@ -26,6 +26,7 @@ export default class I18nPatch {
     this.options.dest = this.options.dest || this.src;
     this.options.config = this.options.config || 'config';
     this.options.statistics = this.options.statistics || false;
+    this.options.unmatched = this.options.unmatched || false;
   }
 
   generate(config, localeConfig) {
@@ -276,6 +277,8 @@ export default class I18nPatch {
   _processFilePerLine(t, file) {
     return new Promise((resolve, reject) => {
       let translator = new Translator(t);
+      translator.file = file;
+      translator.shouldShowUnmatchedLines = this.options.unmatched;
       let out = temp.createWriteStream();
       fs.createReadStream(file)
       .pipe(translator)

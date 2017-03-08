@@ -32,9 +32,15 @@ $ npm install -g i18n-patch
                   json is also available instead of yaml.
                   'config' by default.
     --statistics  Show statistics.
+    --unmatched   Show unmatched lines to stderr.
+                  They are scanned and tried to be translated but
+                  no suitable translation is found in the config files.
+                  These lines indicates that they might
+                  have to be translated or they should be skipped.
+                  false by default.
 
   Examples
-    $ i18n-patch --config example/config --statistics -- ja example/src example/out
+    $ i18n-patch --config example/config --statistics --unmatched -- ja example/src example/out 2> unmatched.log
 ```
 
 ## Example

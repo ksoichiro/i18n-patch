@@ -17,6 +17,9 @@ export default class Translator extends Transform {
     this.endBuffer = [];
     this.pendingPatterns = [];
     this.inputEnd = false;
+    this.file = undefined;
+    this.shouldShowUnmatchedLines = false;
+    this.numOfProcessedLines = 0;
 
     for (let p of this.t.resolvedPatterns) {
       if (p.hasOwnProperty('resolved') && p.resolved) {
@@ -75,11 +78,21 @@ export default class Translator extends Transform {
   }
 
   _processLine(t, line) {
-    let result = line;
-    if (this._shouldSkipLine(t, result)) {
+    this.numOfProcessedLines++;
+    if (this._shouldSkipLine(t, line)) {
       return true;
     }
     Array.prototype.push.apply(this.pendingPatterns, t.resolvedPatterns);
+    let result = this._consumePendingPatterns(line);
+    if (result === null) {
+      return false;
+    }
+    this._pushLines(result);
+    return true;
+  }
+
+  _consumePendingPatterns(line) {
+    let result = line;
     while (this.pendingPatterns.length) {
       let p = this.pendingPatterns.shift();
       if (p.matchOnce && p.matched) {
@@ -108,7 +121,7 @@ export default class Translator extends Transform {
           // and wait next data to be arrived.
           this.pendingPatterns.unshift(p);
           this.buffer.unshift(result);
-          return false;
+          return null;
         }
       }
       result = this._applyToResolved(result, p, p.resolvedExpression, p.exclude);
@@ -131,8 +144,10 @@ export default class Translator extends Transform {
         break;
       }
     }
-    this._pushLines(result);
-    return true;
+    if (this.shouldShowUnmatchedLines && this.file && result === line) {
+      console.warn(`${this.file}:${this.numOfProcessedLines}:${line}`);
+    }
+    return result;
   }
 
   _pushLines(result) {
