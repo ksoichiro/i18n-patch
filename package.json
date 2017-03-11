@@ -1,6 +1,6 @@
 {
   "name": "i18n-patch",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Replacing codes for i18n with patterns.",
   "license": "MIT",
   "repository": {
