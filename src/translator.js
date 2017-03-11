@@ -20,6 +20,7 @@ export default class Translator extends Transform {
     this.file = undefined;
     this.shouldShowUnmatchedLines = false;
     this.numOfProcessedLines = 0;
+    this.numOfUnmatchedLines = 0;
 
     for (let p of this.t.resolvedPatterns) {
       if (p.hasOwnProperty('resolved') && p.resolved) {
@@ -144,8 +145,11 @@ export default class Translator extends Transform {
         break;
       }
     }
-    if (this.shouldShowUnmatchedLines && this.file && result === line) {
-      console.warn(`${this.file}:${this.numOfProcessedLines}:${line}`);
+    if (this.file && result === line) {
+      this.numOfUnmatchedLines++;
+      if (this.shouldShowUnmatchedLines) {
+        console.warn(`${this.file}:${this.numOfProcessedLines}:${line}`);
+      }
     }
     return result;
   }

@@ -287,6 +287,10 @@ export default class I18nPatch {
       .on('error', reject)
       .on('close', () => {
         this._postProcessOnClose(translator, out, file);
+        if (!t.statistics.hasOwnProperty('unmatched')) {
+          t.statistics.unmatched = 0;
+        }
+        t.statistics.unmatched += translator.numOfUnmatchedLines;
         resolve(file);
       });
     });
@@ -462,7 +466,11 @@ export default class I18nPatch {
       if (name !== '') {
         name = ` (${name})`;
       }
-      console.log(`[${t.id}]${name}: processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`);
+      let message = `[${t.id}]${name}: processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`;
+      if (0 < t.statistics.unmatched) {
+        message += `, ${t.statistics.unmatched} unmatched lines`;
+      }
+      console.log(message);
     }
   }
 }
