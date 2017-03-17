@@ -32,6 +32,7 @@ $ npm install -g i18n-patch
                   json is also available instead of yaml.
                   'config' by default.
     --statistics  Show statistics.
+    --condition   Condition value to limit patterns for specific versions.
     --unmatched   Show unmatched lines to stderr.
                   They are scanned and tried to be translated but
                   no suitable translation is found in the config files.
@@ -40,7 +41,7 @@ $ npm install -g i18n-patch
                   false by default.
 
   Examples
-    $ i18n-patch --config example/config --statistics --unmatched -- ja example/src example/out 2> unmatched.log
+    $ i18n-patch --config example/config --statistics --condition "version=1.1.0" --unmatched -- ja example/src example/out 2> unmatched.log
 ```
 
 ## Example
@@ -144,6 +145,7 @@ for providing i18n patch GitLab project without Git branch management.
 * [Complete pattern](#complete-pattern)
 * [Parallel groups](#parallel-groups)
 * [Split files with suffix](#split-files-with-suffix)
+* [Evaluate only when conditions are satisfied](#evaluate-only-when-conditions-are-satisfied)
 
 ### Basic
 
@@ -918,6 +920,34 @@ translations:
   - pattern: 'bar'
     replace: '${bar}'
 ```
+
+### Evaluate only when conditions are satisfied
+
+If you have some translation for older versions of the target software and the recent versions don't require that translation, then you should use `evaluate-when` configuration.
+
+`evaluate-when` configuration is a JavaScript expression string to limit evaluation of the translation set.
+
+For example, if you have patterns for versions older than 1.0.0, and the later versions does not need that patterns, then you can write your `i18n.yml` like this:
+
+```yaml
+translations:
+- name: 'example'
+  src: '*.js'
+  evaluate-when: "semver.lt(version, '1.0.0')"
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+```
+
+The value of `evaluate-when` uses [semver](https://github.com/npm/node-semver) to compare two versions.
+
+One of the versions is given by command line option `--condition`.  
+If you execute this tool like `i18n-patch --condition version=1.1.0`, then the expression would be evaluated as `false` and the translation `example` would be skipped.
+And if you execute this tool like `i18n-patch --condition version=0.9.2`, then the expression would be evaluated as `true` and the translation `example` would be evaluated and processed as usual.  
+`--condition` option can be used multiple times such as `i18n-patch --condition foo=1 --condition bar=2`.  
+The value of `--condition` should be `key=value` format, and if you omit `key=` then it would be interpreted to `version=value`.
+
+`evaluate-when` is a JavaScript expression and the main use case is that a part of the target software is rewritten with other language from some version, so semver library can be used in this expression to compare two versions.
 
 ## License
 

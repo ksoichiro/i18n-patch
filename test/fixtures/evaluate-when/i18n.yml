@@ -1,0 +1,11 @@
+translations:
+- src: 'test.js'
+  evaluate-when: "semver.gt(version, '0.9.0')"
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+- src: 'test.js'
+  evaluate-when: "something === 'bar'"
+  patterns:
+  - pattern: 'bar'
+    replace: '${bar}'

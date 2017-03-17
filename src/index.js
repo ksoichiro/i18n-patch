@@ -2,10 +2,12 @@
 
 import path from 'path';
 import fs from 'fs-extra';
+import vm from 'vm';
 import glob from 'glob';
 import 'babel-polyfill';
 import Config from './config';
 import Translator from './translator';
+const semver = require('semver');
 const async = require('async');
 const temp = require('temp').track();
 const clone = require('clone');
@@ -27,6 +29,24 @@ export default class I18nPatch {
     this.options.config = this.options.config || 'config';
     this.options.statistics = this.options.statistics || false;
     this.options.unmatched = this.options.unmatched || false;
+    this._initConditions();
+  }
+
+  _initConditions() {
+    // condition might be specified multiple time; CSV
+    let conditions = this.options.condition ? this.options.condition.split(',') : [];
+    this.options.conditions = {};
+    for (let c of conditions) {
+      let idx = c.indexOf('=');
+      if (0 < idx) {
+        let key = c.substring(0, idx);
+        let value = c.substring(idx + 1, c.length);
+        this.options.conditions[key] = value;
+      } else {
+        // if the value is not key=value format, then treat it as a variable named 'version'
+        this.options.conditions['version'] = c;
+      }
+    }
   }
 
   generate(config, localeConfig) {
@@ -198,6 +218,11 @@ export default class I18nPatch {
 
   _processTranslation(t) {
     return new Promise((resolve, reject) => {
+      t.shouldEvaluate = this._shouldEvaluate(t);
+      if (!t.shouldEvaluate) {
+        resolve();
+        return;
+      }
       if (this._shouldQuitForThisLocale(t)) {
         resolve();
         return;
@@ -208,6 +233,25 @@ export default class I18nPatch {
       }
       this._processTranslationsForMatchingFiles(t, resolve, reject);
     });
+  }
+
+  _shouldEvaluate(t) {
+    if (!t.hasOwnProperty('evaluateWhen')) {
+      return true;
+    }
+    let sandbox = {
+      semver: semver
+    };
+    Object.assign(sandbox, this.options.conditions);
+    vm.createContext(sandbox);
+    let conditionSatisfied;
+    try {
+      conditionSatisfied = vm.runInContext(t.evaluateWhen, sandbox);
+    } catch (e) {
+      console.log(`${t.name}: warning: could not evaluate 'evaluate-when' property: ${t.evaluateWhen}: ${e.message}`);
+      conditionSatisfied = false;
+    }
+    return conditionSatisfied;
   }
 
   _shouldQuitForThisLocale(t) {
@@ -466,9 +510,14 @@ export default class I18nPatch {
       if (name !== '') {
         name = ` (${name})`;
       }
-      let message = `[${t.id}]${name}: processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`;
-      if (0 < t.statistics.unmatched) {
-        message += `, ${t.statistics.unmatched} unmatched lines`;
+      let message = `[${t.id}]${name}: `;
+      if (t.shouldEvaluate) {
+        message += `processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`;
+        if (0 < t.statistics.unmatched) {
+          message += `, ${t.statistics.unmatched} unmatched lines`;
+        }
+      } else {
+        message += 'skipped';
       }
       console.log(message);
     }

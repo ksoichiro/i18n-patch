@@ -42,6 +42,7 @@
     "meow": "^3.7.0",
     "path-exists": "^2.1.0",
     "pretty-hrtime": "^1.0.2",
+    "semver": "^5.3.0",
     "temp": "^0.8.3"
   },
   "devDependencies": {

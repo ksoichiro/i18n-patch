@@ -15,6 +15,7 @@ const cli = meow(`
                     json is also available instead of yaml.
                     'config' by default.
       --statistics  Show statistics.
+      --condition   Condition value to limit patterns for specific versions.
       --unmatched   Show unmatched lines to stderr.
                     They are scanned and tried to be translated but
                     no suitable translation is found in the config files.
@@ -23,7 +24,7 @@ const cli = meow(`
                     false by default.
 
     Examples
-      $ i18n-patch --config example/config --statistics --unmatched -- ja example/src example/out 2> unmatched.log
+      $ i18n-patch --config example/config --statistics --condition "version=1.1.0" --unmatched -- ja example/src example/out 2> unmatched.log
 `);
 
 const opts = cli.flags;
