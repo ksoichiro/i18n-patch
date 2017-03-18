@@ -23,6 +23,7 @@ export default class I18nPatch {
     if (!src) {
       throw new Error('src is required');
     }
+    this.startTime = process.hrtime();
     this.src = src;
     this.options = options || {};
     this.options.dest = this.options.dest || this.src;
@@ -58,7 +59,17 @@ export default class I18nPatch {
       }
       this._buildPatterns();
       this._copySrc();
-      async.series(this._processTranslations(), (err) => err ? reject(err) : resolve());
+      async.series(this._processTranslations(), (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (this.options.statistics) {
+            let totalTime = process.hrtime(this.startTime);
+            console.log(`Took ${prettyHrtime(totalTime)}`);
+          }
+          resolve();
+        }
+      });
     });
   }
 
@@ -506,11 +517,12 @@ export default class I18nPatch {
 
   _showStatistics(t) {
     if (this.options.statistics) {
+      let group = t.parallelGroup || '';
       let name = t.name || t.src || '';
       if (name !== '') {
         name = ` (${name})`;
       }
-      let message = `[${t.id}]${name}: `;
+      let message = `[${group}][${t.id}]${name}: `;
       if (t.shouldEvaluate) {
         message += `processed ${t.statistics.files} files for ${t.statistics.patterns} patterns in ${prettyHrtime(t.statistics.time)}`;
         if (0 < t.statistics.unmatched) {
