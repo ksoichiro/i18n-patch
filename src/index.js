@@ -215,6 +215,9 @@ export default class I18nPatch {
   }
 
   _resolvePattern(t, p) {
+    if (!this._shouldEvaluate(p)) {
+      return;
+    }
     this._resolve(p);
     if (p.insert && this.config.hasTranslationKey(p.insert.value)) {
       p.insert.resolved = this.config.localeConfig[p.insert.value];

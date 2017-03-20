@@ -949,6 +949,18 @@ The value of `--condition` should be `key=value` format, and if you omit `key=` 
 
 `evaluate-when` is a JavaScript expression and the main use case is that a part of the target software is rewritten with other language from some version, so semver library can be used in this expression to compare two versions.
 
+This configuration can be also applied to `pattern`s:
+
+```yaml
+translations:
+- name: 'example'
+  src: '*.js'
+  patterns:
+  - pattern: 'foo'
+    replace: '${foo}'
+    evaluate-when: "semver.lt(version, '1.0.0')"
+```
+
 ## License
 
 MIT

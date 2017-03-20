@@ -110,3 +110,29 @@ test('evaluate-when: just version value', t => {
 `);
   });
 });
+
+test('evaluate-when: for pattern', t => {
+  let tempDir = temp.mkdirSync('out');
+  let opts = {
+    config: './fixtures/evaluate-when',
+    locale: 'ja',
+    dest: tempDir,
+    statistics: true,
+    condition: 'version=2.0.0,something=bar'
+  };
+  return new I18nPatch('./fixtures/evaluate-when', opts)
+  .generate()
+  .catch((err) => {
+    console.log(err.stack);
+    t.fail(err);
+  })
+  .then(() => {
+    t.is(
+      fs.readFileSync(path.join(tempDir, 'test.js'), 'utf8'),
+      `/*
+  FOO
+  BAZ
+*/
+`);
+  });
+});

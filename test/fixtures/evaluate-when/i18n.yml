@@ -9,3 +9,6 @@ translations:
   patterns:
   - pattern: 'bar'
     replace: '${bar}'
+  - pattern: 'BAR'
+    replace: '${baz}'
+    evaluate-when: "semver.gte(version, '2.0.0')"
