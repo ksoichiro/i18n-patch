@@ -1,3 +1,5 @@
+/* @flow */
+
 'use strict';
 
 import path from 'path';
@@ -7,6 +9,7 @@ import glob from 'glob';
 import 'babel-polyfill';
 import Config from './config';
 import Translator from './translator';
+import type { Translation } from './types';
 const semver = require('semver');
 const async = require('async');
 const temp = require('temp').track();
@@ -19,7 +22,12 @@ const INSERT_AT_BEGIN = 'begin';
 const INSERT_AT_END = 'end';
 
 export default class I18nPatch {
-  constructor(src, options) {
+  startTime: [number, number];
+  src: string;
+  options: any;
+  config: Config;
+
+  constructor(src: string, options: any) {
     if (!src) {
       throw new Error('src is required');
     }
@@ -50,7 +58,7 @@ export default class I18nPatch {
     }
   }
 
-  generate(config, localeConfig) {
+  generate(config: Config | void, localeConfig: any | void) {
     return new Promise((resolve, reject) => {
       try {
         this.config = new Config(this.options, config, localeConfig);
@@ -85,7 +93,7 @@ export default class I18nPatch {
 
   _buildPatterns() {
     for (let t of this.config.config.translations) {
-      t.statistics = {files: 0, patterns: 0};
+      t.statistics = {files: 0, patterns: 0, time: 0, unmatched: 0};
       this._buildConditionals(t);
       if (t.add) {
         t.add.resolved = this.config.localeConfig[t.add.value];
@@ -97,7 +105,7 @@ export default class I18nPatch {
     }
   }
 
-  _buildConditionals(t) {
+  _buildConditionals(t: Translation) {
     if (!t.conditionals) {
       return;
     }
@@ -112,7 +120,7 @@ export default class I18nPatch {
     }
   }
 
-  _buildPatternsForTranslation(t) {
+  _buildPatternsForTranslation(t: any) {
     let patterns = [];
     for (let p of t.patterns) {
       this._buildOnePatternForTranslation(t, p, patterns);
@@ -120,7 +128,7 @@ export default class I18nPatch {
     t.patterns = patterns;
   }
 
-  _buildOnePatternForTranslation(t, p, patterns) {
+  _buildOnePatternForTranslation(t: any, p: any, patterns: any) {
     if (!p.name || !t.namedPatterns) {
       patterns.push(p);
       return;
@@ -140,7 +148,7 @@ export default class I18nPatch {
     }
   }
 
-  _findNamedPattern(t, p) {
+  _findNamedPattern(t: any, p: any) {
     for (let np of t.namedPatterns) {
       if (p.name === np.name) {
         return np;
@@ -149,7 +157,7 @@ export default class I18nPatch {
     return null;
   }
 
-  _buildNamedPatternWithParams(namedPattern, params) {
+  _buildNamedPatternWithParams(namedPattern: any, params: any) {
     let np = this._resolveNamedPattern(namedPattern, params);
     let newPattern = {};
     newPattern.pattern = new RegExp(np.pattern);
@@ -170,7 +178,7 @@ export default class I18nPatch {
     return newPattern;
   }
 
-  _resolveNamedPattern(namedPattern, params) {
+  _resolveNamedPattern(namedPattern: any, params: any) {
     let np = {
       pattern: namedPattern.pattern,
       exclude: namedPattern.exclude,
@@ -203,18 +211,18 @@ export default class I18nPatch {
     return np;
   }
 
-  _isString(s) {
+  _isString(s: any) {
     return s && typeof s !== 'function' && s.replace;
   }
 
-  _resolvePatternsForTranslation(t) {
+  _resolvePatternsForTranslation(t: Translation) {
     t.resolvedPatterns = [];
     for (let p of t.patterns) {
       this._resolvePattern(t, p);
     }
   }
 
-  _resolvePattern(t, p) {
+  _resolvePattern(t: Translation, p: any) {
     if (!this._shouldEvaluate(p)) {
       return;
     }
@@ -225,12 +233,12 @@ export default class I18nPatch {
         p.insert.resolved += NEWLINE;
       }
     }
-    if (p.hasOwnProperty('resolved') && p.resolved) {
+    if (p.hasOwnProperty('resolved') && p.resolved && t.resolvedPatterns) {
       t.resolvedPatterns.push(p);
     }
   }
 
-  _processTranslation(t) {
+  _processTranslation(t: Translation) {
     return new Promise((resolve, reject) => {
       t.shouldEvaluate = this._shouldEvaluate(t);
       if (!t.shouldEvaluate) {
@@ -249,7 +257,7 @@ export default class I18nPatch {
     });
   }
 
-  _shouldEvaluate(t) {
+  _shouldEvaluate(t: Translation) {
     if (!t.hasOwnProperty('evaluateWhen')) {
       return true;
     }
@@ -260,7 +268,7 @@ export default class I18nPatch {
     vm.createContext(sandbox);
     let conditionSatisfied;
     try {
-      conditionSatisfied = vm.runInContext(t.evaluateWhen, sandbox);
+      conditionSatisfied = vm.runInContext(t.evaluateWhen, ((sandbox: any): vm$Context));
     } catch (e) {
       console.log(`${t.name}: warning: could not evaluate 'evaluate-when' property: ${t.evaluateWhen}: ${e.message}`);
       conditionSatisfied = false;
@@ -268,7 +276,7 @@ export default class I18nPatch {
     return conditionSatisfied;
   }
 
-  _shouldQuitForThisLocale(t) {
+  _shouldQuitForThisLocale(t: Translation) {
     if (!t.locale) {
       return false;
     }
@@ -293,7 +301,7 @@ export default class I18nPatch {
     return !shouldContinue;
   }
 
-  _shouldJustAddFile(t) {
+  _shouldJustAddFile(t: Translation) {
     if (!t.add) {
       return false;
     }
@@ -303,7 +311,7 @@ export default class I18nPatch {
     return true;
   }
 
-  _processTranslationsForMatchingFiles(t, resolve, reject) {
+  _processTranslationsForMatchingFiles(t: Translation, resolve: any, reject: any) {
     let src = t.src || '**/*';
     if (!this._isString(src)) {
       reject(`translation.src must be a string: ${JSON.stringify(t.src)}`);
@@ -317,7 +325,7 @@ export default class I18nPatch {
     });
   }
 
-  _processFile(t, file) {
+  _processFile(t: Translation, file: any) {
     return new Promise((resolve, reject) => {
       t.statistics.files++;
       this._processFilePerLine(t, file)
@@ -332,7 +340,7 @@ export default class I18nPatch {
     });
   }
 
-  _processFilePerLine(t, file) {
+  _processFilePerLine(t: Translation, file: any) {
     return new Promise((resolve, reject) => {
       let translator = new Translator(t);
       translator.file = file;
@@ -354,7 +362,7 @@ export default class I18nPatch {
     });
   }
 
-  _postProcessOnClose(translator, out, file) {
+  _postProcessOnClose(translator: Translator, out: any, file: any) {
     if (!translator.matched) {
       // Nothing has been changed, so ignore the temporary file
       return;
@@ -383,7 +391,7 @@ export default class I18nPatch {
     }
   }
 
-  _processFilePerFile(t, file) {
+  _processFilePerFile(t: Translation, file: any) {
     for (let p of t.patterns) {
       if (p.pattern || !p.insert || !p.insert.resolved) {
         continue;
@@ -402,11 +410,11 @@ export default class I18nPatch {
     }
   }
 
-  _hasPerFilePattern(t) {
+  _hasPerFilePattern(t: Translation) {
     return !!t.patterns.find(p => p.insert);
   }
 
-  _resolve(obj) {
+  _resolve(obj: any) {
     if (!obj.replace) {
       return;
     }
@@ -426,7 +434,7 @@ export default class I18nPatch {
     }
   }
 
-  _resolveTranslationKey(target, returnOriginalIfTranslationMissing) {
+  _resolveTranslationKey(target: any, returnOriginalIfTranslationMissing: any) {
     let resolved = false;
     let variableDefined = false;
     let result = target.replace(/\${([^}]*)}/g, (all, matched) => {
@@ -489,7 +497,7 @@ export default class I18nPatch {
     return parallelGroups;
   }
 
-  _processTranslationForGroup(t, cb) {
+  _processTranslationForGroup(t: Translation, cb: (error: Error | void) => void) {
     let startTime = process.hrtime();
     this._processTranslation(t)
     .then(() => {
@@ -499,7 +507,7 @@ export default class I18nPatch {
     }, (err) => cb(err));
   }
 
-  _processTranslationForGroupsInParallel(parallelGroup, cb) {
+  _processTranslationForGroupsInParallel(parallelGroup: any, cb: (error: Error | void) => void) {
     async.parallel(parallelGroup.map((t) => {
       return (cb2) => this._processTranslationForGroup(t, cb2);
     }), (err) => {
@@ -507,19 +515,19 @@ export default class I18nPatch {
     });
   }
 
-  _appendNewline(value) {
+  _appendNewline(value: any) {
     return this._appendNewlineWithExpression(value, value);
   }
 
-  _appendNewlineWithExpression(value, e) {
+  _appendNewlineWithExpression(value: any, e: string) {
     if (!e.endsWith(NEWLINE)) {
       value += NEWLINE;
     }
     return value;
   }
 
-  _showStatistics(t) {
-    if (this.options.statistics) {
+  _showStatistics(t: Translation) {
+    if (this.options.statistics && t.statistics) {
       let group = t.parallelGroup || '';
       let name = t.name || t.src || '';
       if (name !== '') {

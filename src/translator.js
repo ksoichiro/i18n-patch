@@ -1,14 +1,30 @@
+/* @flow */
+
 'use strict';
 
 import 'babel-polyfill';
 import { Transform } from 'stream';
+import type { Translation } from './types';
 
 const NEWLINE = '\n';
 const INSERT_AT_BEGIN = 'begin';
 const INSERT_AT_END = 'end';
 
 export default class Translator extends Transform {
-  constructor(translation) {
+  t: Translation;
+  matched: boolean;
+  buffer: Array<any> | null;
+  beginBuffer: Array<any>;
+  endBuffer: Array<any>;
+  pendingPatterns: Array<any>;
+  inputEnd: boolean;
+  file: any;
+  shouldShowUnmatchedLines: boolean;
+  numOfProcessedLines: number;
+  numOfUnmatchedLines: number;
+  lastLineData: any;
+
+  constructor(translation: Translation) {
     super({ objectMode: true });
     this.t = translation;
     this.matched = false;
@@ -37,7 +53,7 @@ export default class Translator extends Transform {
     return 1 <= this.endBuffer.length;
   }
 
-  _transform(chunk, encoding, done) {
+  _transform(chunk: any, encoding: string, done: () => void) {
     let data = chunk.toString();
     if (this.lastLineData) {
       data = this.lastLineData + data;
@@ -50,7 +66,7 @@ export default class Translator extends Transform {
     done();
   }
 
-  _flush(done) {
+  _flush(done: () => void) {
     for (let p of this.t.resolvedPatterns) {
       this._insertExpressionAtBeginOrEnd(p);
     }
@@ -59,7 +75,7 @@ export default class Translator extends Transform {
         this._insertExpressionAtBeginOrEnd(c);
       }
     }
-    if (this.lastLineData) {
+    if (this.lastLineData && this.buffer) {
       this.buffer.push(this.lastLineData);
     }
     this.inputEnd = true;
@@ -70,7 +86,7 @@ export default class Translator extends Transform {
   }
 
   _process() {
-    while (this.buffer.length) {
+    while (this.buffer && this.buffer.length) {
       if (!this._processLine(this.t, this.buffer.shift())) {
         // Need to wait next data
         break;
@@ -78,7 +94,7 @@ export default class Translator extends Transform {
     }
   }
 
-  _processLine(t, line) {
+  _processLine(t: Translation, line: string) {
     this.numOfProcessedLines++;
     if (this._shouldSkipLine(t, line)) {
       return true;
@@ -92,7 +108,7 @@ export default class Translator extends Transform {
     return true;
   }
 
-  _consumePendingPatterns(line) {
+  _consumePendingPatterns(line: string) {
     let result = line;
     while (this.pendingPatterns.length) {
       let p = this.pendingPatterns.shift();
@@ -105,7 +121,7 @@ export default class Translator extends Transform {
       let consumedBuffers = 0;
       if (1 < patternLines) {
         let requiredLines = patternLines - result.split(NEWLINE).length;
-        if (requiredLines <= this.buffer.length) {
+        if (this.buffer && requiredLines <= this.buffer.length) {
           let i;
           for (i = 0; i < requiredLines; i++) {
             result += NEWLINE + this.buffer[i];
@@ -121,7 +137,9 @@ export default class Translator extends Transform {
           // put the current pattern and result back to the buffer
           // and wait next data to be arrived.
           this.pendingPatterns.unshift(p);
-          this.buffer.unshift(result);
+          if (this.buffer) {
+            this.buffer.unshift(result);
+          }
           return null;
         }
       }
@@ -154,12 +172,12 @@ export default class Translator extends Transform {
     return result;
   }
 
-  _pushLines(result) {
+  _pushLines(result: string) {
     // TODO Preserve original newline if possible
     this.push(result + NEWLINE);
   }
 
-  _shouldSkipLine(t, result) {
+  _shouldSkipLine(t: Translation, result: any) {
     // If pendingPatterns are not empty,
     // it means that the first pattern need more lines.
     if (0 !== this.pendingPatterns.length) {
@@ -178,7 +196,7 @@ export default class Translator extends Transform {
     return false;
   }
 
-  _getNumOfLinesInPattern(pattern) {
+  _getNumOfLinesInPattern(pattern: any) {
     if (pattern instanceof RegExp) {
       // Usually the pattern includes ([^\n]*) to express a line
       // in multiline expression, so this should be removed
@@ -189,7 +207,7 @@ export default class Translator extends Transform {
     }
   }
 
-  _insertExpressionAtBeginOrEnd(c) {
+  _insertExpressionAtBeginOrEnd(c: any) {
     if (!c.hasOwnProperty('insert') || !c.insert || !c.insert.hasOwnProperty('resolved') || !c.insert.resolved) {
       return;
     }
@@ -204,16 +222,16 @@ export default class Translator extends Transform {
     }
   }
 
-  _consumeLookedAheadBuffers(consumedBuffers) {
+  _consumeLookedAheadBuffers(consumedBuffers: number) {
     // We should consume looked-ahead buffers only when they match the pattern.
-    if (0 < consumedBuffers) {
+    if (0 < consumedBuffers && this.buffer) {
       for (let i = consumedBuffers; 0 < i; i--) {
         this.buffer.shift();
       }
     }
   }
 
-  _applyToResolved(target, obj, exp, exclude) {
+  _applyToResolved(target: any, obj: any, exp: any, exclude: any) {
     // Quit resolving and replacing if it doesn't match pattern
     if (exp instanceof RegExp) {
       if (!exp.test(target)) {
@@ -251,7 +269,7 @@ export default class Translator extends Transform {
     return target.replace(exp, resolved);
   }
 
-  _applyToArgResolved(target, obj, pattern) {
+  _applyToArgResolved(target: any, obj: any, pattern: any) {
     if (obj.hasOwnProperty('args')) {
       for (let i = 0; i < obj.args.length; i++) {
         let argResolved = obj.argsResolved[i];

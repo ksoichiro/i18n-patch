@@ -1,9 +1,11 @@
+/* @flow */
+
 'use strict';
 
 const camelCase = require('camelcase');
 
 export default class Camelizer {
-  camelize(obj) {
+  camelize(obj: any) {
     if (!this.acceptable(obj)) {
       return;
     }
@@ -16,7 +18,7 @@ export default class Camelizer {
       this.camelize(obj[converted]);
     });
   }
-  acceptable(obj) {
+  acceptable(obj: any) {
     if (obj === undefined || obj === null) {
       return false;
     }

@@ -48,18 +48,23 @@
   "devDependencies": {
     "ava": "^0.16.0",
     "babel-cli": "^6.6.5",
+    "babel-eslint": "^7.2.1",
     "babel-plugin-transform-runtime": "^6.7.5",
     "babel-preset-es2015": "^6.6.0",
+    "babel-preset-flow": "^6.23.0",
     "coveralls": "^2.11.9",
     "cross-env": "^1.0.7",
     "eslint": "^2.5.3",
+    "eslint-plugin-flowtype": "^2.30.4",
+    "flow-bin": "^0.43.1",
     "nyc": "^6.4.0",
     "rimraf": "^2.5.2",
     "sinon": "^1.17.5"
   },
   "babel": {
     "presets": [
-      "es2015"
+      "es2015",
+      "flow"
     ],
     "plugins": [
       "transform-runtime"
@@ -84,7 +89,7 @@
     "start": "rimraf example/out && node ./lib/cli --config example ja example/src example/out",
     "build": "cross-env BABEL_ENV=production babel src -d lib",
     "watch": "babel src -d lib -s inline -w",
-    "test": "eslint src && nyc ava",
+    "test": "eslint src && flow check && nyc ava",
     "report": "nyc report --reporter=html"
   },
   "eslintConfig": {
@@ -92,10 +97,16 @@
       "es6": true,
       "node": true
     },
-    "extends": "eslint:recommended",
+    "extends": [
+      "eslint:recommended",
+      "plugin:flowtype/recommended"
+    ],
     "parserOptions": {
       "sourceType": "module"
     },
+    "plugins": [
+      "flowtype"
+    ],
     "rules": {
       "indent": [
         "error",

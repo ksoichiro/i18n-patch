@@ -1,3 +1,5 @@
+/* @flow */
+
 'use strict';
 
 import fs from 'fs-extra';
@@ -11,7 +13,11 @@ const pathExists = require('path-exists');
 const ENCODING = 'utf8';
 
 export default class Config {
-  constructor(options, config, localeConfig) {
+  options: any;
+  config: any;
+  localeConfig: any;
+
+  constructor(options: any, config: any, localeConfig: any) {
     this.options = options;
     this.config = config || this._readConfigFile('i18n');
     if (localeConfig) {
@@ -27,11 +33,11 @@ export default class Config {
     new Camelizer().camelize(this.config.translations);
   }
 
-  hasTranslationKey(key) {
+  hasTranslationKey(key: string) {
     return this.localeConfig.hasOwnProperty(key);
   }
 
-  _readConfigFile(name) {
+  _readConfigFile(name: string) {
     let configPath = path.join(this.options.config, `${name}.yml`);
     let result;
     if (pathExists.sync(configPath)) {
